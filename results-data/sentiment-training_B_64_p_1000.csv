@@ -1,0 +1,3 @@
+Step,Train Loss,Train Accuracy,Test Loss,Test Accuracy
+0,0.7249,48.48,0.722,48.93
+200,0.5058,76.1,0.5125,75.31

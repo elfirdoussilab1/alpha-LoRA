@@ -12,6 +12,6 @@
  
  
 eval "$(/lustre1/tier2/users/aymane.elfirdoussi/miniconda3/bin/conda shell.bash hook)"
-conda activate hqq_env
+conda activate venv
  
 python3 sentiment_model.py

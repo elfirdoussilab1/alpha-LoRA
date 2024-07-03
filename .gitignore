@@ -1,3 +1,7 @@
 *.mat
 *.DS_Store
+*.out
+*.error
+*.pth
+__pycache__
 
