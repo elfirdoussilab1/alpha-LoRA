@@ -7,18 +7,19 @@ import tiktoken
 from torch.utils.data import Dataset, DataLoader
 from datasets import load_dataset
 import pandas as pd
+from tqdm.auto import tqdm
 
 # Hyperparameters
 batch_size = 64
 #T = 2000 # Context length
-max_iters = 5000
-eval_interval = 200
+max_iters = 2000
+eval_interval = 20
 lr = 1e-3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('Using device', device)
 
 # Embedding dimension
-p = 100
+p = 1000
 #----------
 
 # For reproducibility
@@ -140,7 +141,7 @@ results = pd.DataFrame(columns= ['Step', 'Train Loss', 'Train Accuracy', 'Test L
 eval_filename = f'./results-data/sentiment-training_B_{batch_size}_p_{p}.csv'
 
 model.train()
-for i in range(max_iters):
+for i in tqdm(range(max_iters)):
 
     if i % eval_interval == 0:
         losses = evaluate_loss()
@@ -183,6 +184,6 @@ loss = loss_fn(logits, Y)
 print(loss.item())
 #print("Accuracy", evaluate_accuracy())
 '''
-model_name = 'sentiment_model.pth'
+model_name = f'sentiment_model_B_{batch_size}_p_{p}.pth'
 torch.save(model.state_dict(), model_name)
 print('Model saved at ', model_name)
