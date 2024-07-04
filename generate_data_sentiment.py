@@ -1,5 +1,4 @@
-# This ile is used to generate datsets of embeddings
-
+# This file is used to generate datsets of embeddings
 from datasets import load_dataset
 from dataset import *
 import torch
@@ -7,26 +6,24 @@ import numpy as np
 import scipy.io as sio
 from tqdm.auto import tqdm
 
-dataset_id = 'imdb'
+dataset_id = 'stanfordnlp/imdb'
 dataset = load_dataset(dataset_id)
+p = 1000
+path = f'sentiment_model_B_64_p_{p}.pth'
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 # train data
-test_data = dataset['test']
+train_data = dataset['train']
 
 # Prompts and labels
-prompts = test_data['text']
-labels = test_data['label']
+prompts = train_data['text']
+labels = train_data['label']
 
 # Generate embeddings for all prompts
-embeddings = []
-for prompt in tqdm(prompts):
-    try:
-        embeddings.append(get_embedding_gpt2(prompt, device))
-    except:
-        continue
+embedder = CustomEmbdedder(p, path, device)
+embeddings = embedder.get_embeddings(prompts, batch_size= 100)
     
 # Convert labels to a numpy array
 labels_np = 2*np.array(labels) - 1
@@ -38,6 +35,7 @@ data_dict = {
 }
 
 # Save the dataset to a .mat file
-sio.savemat('sentiment_test_dataset.mat', data_dict)
+filename = 'sentiment_test_dataset.mat'
+sio.savemat(filename, data_dict)
 
-print("Dataset saved successfully to 'sentiment_test_dataset.mat'.")
+print(f"Dataset saved successfully to {filename}'.")

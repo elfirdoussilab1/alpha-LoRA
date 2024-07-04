@@ -9,6 +9,7 @@ import torch, os, random
 import pandas as pd
 from typing import List, Union
 from tqdm.auto import tqdm
+import tiktoken
 
 type_to_path = {
     'book' : './datasets/Amazon_review/books.mat',
@@ -157,6 +158,40 @@ class GPT2Embedder:
 
         return chunks
 
+
+# Our embedder
+class CustomEmbdedder:
+    def __init__(self, p, path, device= "cuda"):
+        self.p = p
+        self.tokenizer = tiktoken.get_encoding("o200k_base")
+        self.model = BerTII(p)
+        self.model.load_state_dict(torch.load(path)).to(device)
+        self.device = device
+    
+    def get_embeddings(self, texts: Union[str, List[str]], batch_size: int = 8) -> np.ndarray:
+        if isinstance(texts, str):
+            texts = [texts]
+
+        all_embeddings = []
+
+        for i in tqdm(range(0, len(texts), batch_size)):
+            batch_texts = texts[i:i+batch_size]
+            batch_embeddings = self._process_batch(batch_texts)
+            all_embeddings.extend(batch_embeddings)
+
+        return np.array(all_embeddings)
+    
+    @torch.no_grad
+    def _process_batch(self, batch_texts: List[str]) -> List[np.ndarray]:
+        batch_embeddings = []
+        
+        for text in batch_texts:
+            tokens = self.tokenizer.encode(text)
+            x = torch.tensor(tokens, dtype= torch.long).to(self.device) # (context,)
+            x = self.model.embedding_table(x) # (context, p)
+            x = x.mean(dim = 0)[0] # (p, )
+            batch_embeddings.append(x.detach().cpu().numpy())
+        return batch_embeddings
 
 class LLM_dataset:
     def __init__(self, n, type_name, classifier = 'pre') -> None:
