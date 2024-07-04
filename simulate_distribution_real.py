@@ -24,8 +24,8 @@ N = 20000
 n = 100
 gamma_pre = 1
 gamma_ft = 1
-type_1 = 'sentiment'
-type_2 = 'sentiment'
+type_1 = 'sentiment_train'
+type_2 = 'sentiment_test'
 
 # Datasets
 data_pre, data_ft, beta, vmu_orth = create_pre_ft_datasets(N, type_1, n, type_2, dataset_name= 'llm')

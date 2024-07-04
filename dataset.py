@@ -15,8 +15,8 @@ type_to_path = {
     'dvd' : './datasets/Amazon_review/dvd.mat',
     'elec' : './datasets/Amazon_review/elec.mat',
     'kitchen' : './datasets/Amazon_review/kitchen.mat',
-    'sentiment_train': './datasets/GPT2/sentiment_train.mat',
-    'sentiment_test': './datasets/GPT2/sentiment_test.mat',
+    'sentiment_train': 'sentiment_train.mat',
+    'sentiment_test': 'sentiment_test.mat',
     'sentiment': 'sentiment.mat',
     'safety': 'safety.mat'
 
