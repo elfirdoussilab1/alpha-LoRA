@@ -1,10 +1,9 @@
 # This file is used to generate datsets of embeddings
 from datasets import load_dataset
-from dataset import *
 import torch
 import numpy as np
 import scipy.io as sio
-from tqdm.auto import tqdm
+from embedders import *
 
 dataset_id = 'stanfordnlp/imdb'
 dataset = load_dataset(dataset_id)
@@ -14,12 +13,13 @@ path = f'sentiment_model_B_64_p_{p}.pth'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-# train data
-train_data = dataset['train']
+# train/test data
+split = 'test'
+data = dataset[split]
 
 # Prompts and labels
-prompts = train_data['text']
-labels = train_data['label']
+prompts = data['text']
+labels = data['label']
 
 # Generate embeddings for all prompts
 embedder = CustomEmbdedder(p, path, device)
@@ -35,7 +35,7 @@ data_dict = {
 }
 
 # Save the dataset to a .mat file
-filename = 'sentiment_test_dataset.mat'
+filename = f'sentiment_{split}_dataset.mat'
 sio.savemat(filename, data_dict)
 
 print(f"Dataset saved successfully to {filename}'.")

@@ -5,11 +5,12 @@ import matplotlib.pyplot as plt
 from rmt_results import *
 from dataset import *
 
-plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
+#plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 
 fix_seed(123)
 
 # Parameters
+'''
 p = 400
 N = 2000
 n = 50
@@ -17,9 +18,17 @@ gamma_pre = 1
 gamma_ft = 1
 type_1 = 'book'
 type_2 = 'dvd'
+'''
+p = 1000
+N = 20000
+n = 100
+gamma_pre = 1
+gamma_ft = 1
+type_1 = 'sentiment'
+type_2 = 'sentiment'
 
 # Datasets
-data_pre, data_ft, beta, vmu_orth = create_pre_ft_datasets(N, type_1, n, type_2)
+data_pre, data_ft, beta, vmu_orth = create_pre_ft_datasets(N, type_1, n, type_2, dataset_name= 'llm')
 mu_orth = np.linalg.norm(vmu_orth)
 mu = data_pre.mu
 X_pre, y_pre = data_pre.X_train.T, data_pre.y_train
