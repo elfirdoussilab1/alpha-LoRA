@@ -105,3 +105,21 @@ def optimal_alphas(N, n, p, mu, mu_orth, beta, gamma_pre, gamma_ft):
     alpha_min = - lambda_R * mu_beta_2 / (beta * gamma_ft * mu**2 * (1 + delta_Q))
 
     return alpha_max, alpha_min
+
+
+###------------------------ Pre-trained model -----------------------
+def test_expectation_pre(N, p, mu, gamma):
+    eta = p/N
+    delta = Delta(eta, gamma)
+    return mu**2 / (mu**2 + 1 + gamma * (1 + delta))
+
+def test_expectation_2_pre(N, p, mu, gamma):
+    eta = p/N
+    delta = Delta(eta, gamma)
+    d = denom(gamma, p, N)
+    lambda_pre = mu**2 + 1 + gamma * (1 + delta)
+
+    r_1 = mu**2 / (d * lambda_pre)
+    s_1 = (mu**2 + 1) / lambda_pre - 2 * (1 - d)
+
+    return r_1 * s_1 + (1 - d)/d
