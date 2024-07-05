@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from datasets import load_dataset
+import tiktoken
 
 # Load the IMDB datset
 class Sentiment(Dataset):
@@ -28,10 +29,13 @@ class Sentiment(Dataset):
         y = self.labels[idx]
         return x.to(self.device), y.to(self.device), n.to(self.device)
 
+
 class BerTII(nn.Module):
     def __init__(self, p, vocab_size):
         # p is the Embedding dimension, we get to choose it
         super().__init__()
+        self.p = p
+        self.vocab_size = vocab_size
         self.embedding_table = nn.Embedding(vocab_size, p)
         self.ln = nn.LayerNorm(p)
         self.linear = nn.Linear(p, 1)
@@ -48,7 +52,32 @@ class BerTII(nn.Module):
         B = logits.shape[0]
         return logits.view(B) # (B, )
 
-class AlphaFTLayer(nn.Module):
-    def __init__(self, p, alpha):
+# Collate function: that adds rows of different lengths to the same tensor
+def collate_fn(batch):
+    X = torch.nested.nested_tensor([x for (x, y, n) in batch])
+    X.requires_grad = False
+    Y = torch.stack([y for (x, y, n) in batch])
+    Y.requires_grad = False
+    N = torch.stack([n for (x, y, n) in batch]).view(len(batch))
+    N.requires_grad = False
+    return X, Y, N
+
+class LinearWithFTLayer(nn.Module):
+    def __init__(self, linear, p):
         super().__init__()
-        
+        self.alpha = torch.nn.Parameter(torch.tensor(1))
+        self.alpha.requires_grad = True
+        self.linear = linear
+        self.V = nn.Linear(p, 1, bias = False)
+
+    def forward(self, x):
+        x = self.alpha * self.linear(x) + self.V(x)
+        return x
+
+def replace_linear_with_ft(model, p):
+    for name, module in model.named_children():
+        if isinstance(module, nn.Linear):
+            # Replace the linear layer with LinearWithFTLayer
+            setattr(model, name, LinearWithFTLayer(module, p))
+        else:
+            continue

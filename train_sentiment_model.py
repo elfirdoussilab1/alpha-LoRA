@@ -29,16 +29,6 @@ vocab_size = tokenizer.max_token_value
 train_data = Sentiment('train', tokenizer, device)
 test_data = Sentiment('test', tokenizer, device)
 
-# Collate function: that adds rows of different lengths to the same tensor
-def collate_fn(batch):
-    X = torch.nested.nested_tensor([x for (x, y, n) in batch])
-    X.requires_grad = False
-    Y = torch.stack([y for (x, y, n) in batch])
-    Y.requires_grad = False
-    N = torch.stack([n for (x, y, n) in batch]).view(len(batch))
-    N.requires_grad = False
-    return X, Y, N
-
 # DataLoaders
 train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn= collate_fn)
 eval_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn= collate_fn)

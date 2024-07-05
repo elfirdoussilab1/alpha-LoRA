@@ -2,6 +2,7 @@
 import numpy as np
 import random
 import dataset
+import json
 
 def fix_seed(seed):
     np.random.seed(seed)
