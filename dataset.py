@@ -164,7 +164,7 @@ class LLM_dataset:
         self.X = data['embeddings'] # shape (n, p)
         self.y = data['labels'][0].astype(int)
 
-        # Preprocessing
+        # Preprocessing: maybe we should modify this a little 
         sc = StandardScaler()
         self.X = sc.fit_transform(self.X)
         vmu_1 = np.mean(self.X[self.y < 0], axis = 0)

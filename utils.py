@@ -83,10 +83,10 @@ def empirical_accuracy(classifier, batch, N, n, p, mu, mu_orth, beta, alpha, gam
             X_ft, y_ft = generate_data(N, n, p, mu, mu_orth, beta, 'ft')[0]
             X_test, y_test = generate_data(N, n, p, mu, mu_orth, beta, classifier)[1]
 
-        elif 'amazon' in data_type: # amazon_source_target
+        else: # amazon_source_target or llm
             source = data_type.split('_')[1]
             target = data_type.split('_')[2]
-            data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, source, n, target)
+            data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, source, n, target, data_type)
             X_pre, y_pre = data_pre.X_train.T, data_pre.y_train
             X_ft, y_ft = data_ft.X_train.T, data_ft.y_train
             X_test, y_test = data_ft.X_test.T, data_ft.y_test

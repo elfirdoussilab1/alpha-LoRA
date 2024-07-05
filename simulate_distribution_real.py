@@ -20,12 +20,12 @@ type_1 = 'book'
 type_2 = 'dvd'
 '''
 p = 1000
-N = 20000
+N = 40000
 n = 100
 gamma_pre = 1
 gamma_ft = 1
-type_1 = 'sentiment_train'
-type_2 = 'sentiment_test'
+type_1 = 'safety'
+type_2 = 'sentiment'
 
 # Datasets
 data_pre, data_ft, beta, vmu_orth = create_pre_ft_datasets(N, type_1, n, type_2, dataset_name= 'llm')

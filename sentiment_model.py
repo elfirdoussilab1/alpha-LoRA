@@ -47,3 +47,8 @@ class BerTII(nn.Module):
         logits = torch.sigmoid(X) # (B, 1)
         B = logits.shape[0]
         return logits.view(B) # (B, )
+
+class AlphaFTLayer(nn.Module):
+    def __init__(self, p, alpha):
+        super().__init__()
+        
