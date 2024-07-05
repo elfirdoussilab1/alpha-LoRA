@@ -65,8 +65,8 @@ def collate_fn(batch):
 class LinearWithFTLayer(nn.Module):
     def __init__(self, linear, p):
         super().__init__()
-        self.alpha = torch.nn.Parameter(torch.tensor(1))
-        self.alpha.requires_grad = True
+        self.alpha = torch.nn.Parameter(torch.tensor(1, dtype = torch.float, requires_grad= True))
+        #self.alpha.requires_grad = True
         self.linear = linear
         self.V = nn.Linear(p, 1, bias = False)
 
