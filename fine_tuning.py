@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 batch_size = 128
 max_iters = 1000
 eval_interval = 20
-lr = 1e-3
+lr = 1e-2
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('Using device ', device)
 
@@ -60,7 +60,7 @@ for param in model.parameters():
 replace_linear_with_ft(model, p)
 model = model.to(device)
 total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-print(f'Total number of Fine-tuning parameters {total_params:,}')
+print(f'Total number of Fine-tuning parameters {total_params:,}') # 1001: 1 (alpha) + 1000 ()
 
 # Loss and Optimizer
 loss_fn = nn.BCELoss()

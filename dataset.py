@@ -9,6 +9,7 @@ import torch
 from sentiment_model import *
 import json
 import csv
+from sklearn.mixture import GaussianMixture
 
 type_to_path = {
     'book' : './datasets/Amazon_review/books.mat',
@@ -54,6 +55,19 @@ class LLM_dataset:
         data = loadmat(type_to_path[type_name])
         self.X = data['embeddings'] # shape (n, p)
         self.y = data['labels'][0].astype(int)
+
+        # Outlier removal
+        gmm = GaussianMixture(n_components=2)
+        gmm.fit(self.X)
+        # Calculate log-density of each point
+        log_density = gmm.score_samples(self.X)
+        # Determine threshold for outlier detection
+        threshold = np.percentile(log_density, 5)  # Example: 5th percentile
+        # Identify outliers
+        outliers = self.X[log_density < threshold]
+        # Remove outliers from original dataset
+        self.X = self.X[log_density >= threshold]
+        self.y = self.y[log_density >= threshold]
 
         # Preprocessing: maybe we should modify this a little 
         sc = StandardScaler()

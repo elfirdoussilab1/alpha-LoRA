@@ -17,6 +17,8 @@ gamma = 1e2
 # Datasets
 train_data = LLM_dataset(N, 'sentiment_train', 'pre')
 test_data = LLM_dataset(N, 'sentiment_test', 'pre')
+N = train_data.X.shape[0]
+
 mu = train_data.mu
 X_train, y_train = train_data.X_train.T, train_data.y_train
 X_test, y_test = test_data.X_train.T, test_data.y_train
