@@ -55,7 +55,6 @@ class LLM_dataset:
         data = loadmat(type_to_path[type_name])
         self.X = data['embeddings'] # shape (n, p)
         self.y = data['labels'][0].astype(int)
-
         # Outlier removal
         gmm = GaussianMixture(n_components=2)
         gmm.fit(self.X)
@@ -64,14 +63,17 @@ class LLM_dataset:
         # Determine threshold for outlier detection
         threshold = np.percentile(log_density, 5)  # Example: 5th percentile
         # Identify outliers
-        outliers = self.X[log_density < threshold]
+        #outliers = self.X[log_density < threshold]
         # Remove outliers from original dataset
         self.X = self.X[log_density >= threshold]
         self.y = self.y[log_density >= threshold]
+        print("Finished outlier removal")
 
         # Preprocessing: maybe we should modify this a little 
         sc = StandardScaler()
         self.X = sc.fit_transform(self.X)
+        print("Finished standard scaling")
+        
         vmu_1 = np.mean(self.X[self.y < 0], axis = 0)
         vmu_2 = np.mean(self.X[self.y > 0], axis = 0)
         self.mu = np.sqrt(abs(np.inner(vmu_1, vmu_2)))
@@ -163,4 +165,4 @@ def create_safety_dataset(path = 'unsafe_prompts.jsonl'):
         writer.writerows(rows)  # Write rows of prompts and labels
 
     
-create_safety_dataset()
+#create_safety_dataset()

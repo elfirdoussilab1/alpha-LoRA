@@ -11,18 +11,19 @@ fix_seed(123)
 
 # Parameters
 p = 1000
-N = 25000
-gamma = 1e2
+N = 12500
+gamma = 1e-2
 
 # Datasets
-train_data = LLM_dataset(N, 'sentiment_train', 'pre')
-test_data = LLM_dataset(N, 'sentiment_test', 'pre')
-N = train_data.X.shape[0]
+train_data = LLM_dataset(N, 'sentiment_train', 'ft')
+#test_data = LLM_dataset(N, 'sentiment_test', 'pre')
 
 mu = train_data.mu
 X_train, y_train = train_data.X_train.T, train_data.y_train
-X_test, y_test = test_data.X_train.T, test_data.y_train
+X_test, y_test = train_data.X_test.T, train_data.y_test
 
+print(X_train.shape)
+print(X_test.shape)
 # Expectation of class C_1 and C_2
 mean_c2 = test_expectation_pre(N, p, mu, gamma)
 mean_c1 = - mean_c2
@@ -32,8 +33,8 @@ std = np.sqrt(expec_2 - mean_c2**2)
 # Classifier 
 #print("Fine-tuning shape:", X_ft.shape)
 w = classifier_vector(X_train, y_train, None, None, None, gamma, None, classifier= 'pre' )
-t1 = np.linspace(mean_c1 - 4*std, mean_c1 + 5*std, 100)
-t2 = np.linspace(mean_c2 - 4*std, mean_c2 + 5*std, 100)
+t1 = np.linspace(mean_c1 - 5*std, mean_c1 + 5*std, 100)
+t2 = np.linspace(mean_c2 - 5*std, mean_c2 + 5*std, 100)
 
 
 # Plot all
@@ -49,5 +50,5 @@ plt.hist(X_test[:, (y_test > 0)].T @ w, color = 'tab:blue', density = True, bins
 plt.title(f'Sentiment classifier')
 
 plt.ylabel("Density")
-path = './study-plot' + f'/distribution_real-sentiment-N-{N}-p-{p}-mu-{round(mu, 2)}-gamma_pre-{gamma}.pdf'
+path = './study-plot' + f'/distribution_real-sentiment-N-{N}-p-{p}-mu-{round(mu, 3)}-gamma_pre-{gamma}.pdf'
 plt.savefig(path, bbox_inches='tight')
