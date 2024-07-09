@@ -1,9 +1,10 @@
 # This file will be used to train the sentiment analysis model
-from sentiment_model import *
+from bertii_model import *
 import tiktoken
 from torch.utils.data import DataLoader
 import pandas as pd
 from tqdm.auto import tqdm
+import dataset
 
 # Hyperparameters
 batch_size = 64
@@ -26,13 +27,13 @@ tokenizer = tiktoken.get_encoding("o200k_base")
 vocab_size = tokenizer.max_token_value
 
 # Datasets 
-train_data = Sentiment('train', tokenizer, device)
-test_data = Sentiment('test', tokenizer, device)
+train_data = dataset.Sentiment('train', tokenizer, device)
+test_data = dataset.Sentiment('test', tokenizer, device)
 
 # DataLoaders
-train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn= collate_fn)
-eval_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn= collate_fn)
-test_dataloader = DataLoader(test_data, batch_size= batch_size , shuffle=True, collate_fn= collate_fn)
+train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn= dataset.collate_fn)
+eval_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn= dataset.collate_fn)
+test_dataloader = DataLoader(test_data, batch_size= batch_size , shuffle=True, collate_fn= dataset.collate_fn)
 
 loader = {'train' : train_dataloader, 'eval': eval_dataloader ,'test': test_dataloader}
 

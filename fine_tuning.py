@@ -1,9 +1,10 @@
 # In this file, we will fine-tune Our BerTII pre-trained model to perform safety tasks
-from sentiment_model import *
+from bertii_model import *
 import tiktoken
 from torch.utils.data import DataLoader
 import pandas as pd
 from tqdm.auto import tqdm
+import dataset
 
 # Hyperparameters
 batch_size = 128
@@ -19,34 +20,14 @@ p = 1000
 # Tokenizer
 tokenizer = tiktoken.get_encoding("o200k_base")
 vocab_size = tokenizer.max_token_value
-
-# Datasets
-class Safety(Dataset):
-    def __init__(self, split, tokenizer, device):
-        self.device = device
-        self.tokenizer = tokenizer
-        df = pd.read_csv(f'safety_{split}.csv')
-        self.prompts = df['prompt'].tolist()
-        self.labels = torch.tensor(df['label'].tolist(), dtype = torch.float)
-
-    def __len__(self):
-        return len(self.prompts)
     
-    def __getitem__(self, idx):
-        # Tokenization
-        tokens = self.tokenizer.encode(self.prompts[idx])
-        n = torch.tensor(len(tokens), dtype = torch.float)
-        x = torch.tensor(tokens, dtype= torch.long)
-        y = self.labels[idx]
-        return x.to(self.device), y.to(self.device), n.to(self.device)
-    
-train_data = Safety('train', tokenizer, device)
-test_data = Safety('test', tokenizer, device)
+train_data = dataset.Safety('train', tokenizer, device)
+test_data = dataset.Safety('test', tokenizer, device)
 
 # DataLoader
-train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn = collate_fn)
-eval_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn = collate_fn)
-test_dataloader = DataLoader(test_data, batch_size= batch_size , shuffle=True, collate_fn = collate_fn)
+train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn = dataset.collate_fn)
+eval_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, collate_fn = dataset.collate_fn)
+test_dataloader = DataLoader(test_data, batch_size= batch_size , shuffle=True, collate_fn = dataset.collate_fn)
 
 loader = {'train' : train_dataloader, 'eval': eval_dataloader ,'test': test_dataloader}
 

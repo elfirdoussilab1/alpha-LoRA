@@ -3,13 +3,14 @@ import numpy as np
 from scipy.io import loadmat
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from typing import List, Union
 from datasets import load_dataset
 import torch
-from sentiment_model import *
+from bertii_model import *
 import json
 import csv
 from sklearn.mixture import GaussianMixture
+from torch.utils.data import Dataset
+import pandas as pd
 
 type_to_path = {
     'book' : './datasets/Amazon_review/books.mat',
@@ -48,6 +49,57 @@ class Amazon:
         else: # pre
             self.X_train, self.y_train = self.X, self.y
 
+# IMDB dataset for sentiment analysis
+class Sentiment(Dataset):
+    def __init__(self, split, tokenizer, device):
+        # split is either train or test
+        self.tokenizer = tokenizer
+        self.device = device
+        #self.context_length = context_length
+        ds = load_dataset("stanfordnlp/imdb")
+        data = ds[split]
+        self.prompts = data['text'] # list of str
+        self.labels = torch.tensor(data['label'], dtype = torch.float) # tensor containing 0, 1
+
+    def __len__(self):
+        return len(self.prompts)
+
+    def __getitem__(self, idx):
+        # Tokenization
+        tokens = self.tokenizer.encode(self.prompts[idx])
+        n = torch.tensor(len(tokens), dtype = torch.float)
+        x = torch.tensor(tokens, dtype= torch.long)
+        y = self.labels[idx]
+        return x.to(self.device), y.to(self.device), n.to(self.device)
+
+class Safety(Dataset):
+    def __init__(self, split, tokenizer, device):
+        self.device = device
+        self.tokenizer = tokenizer
+        df = pd.read_csv(f'safety_{split}.csv')
+        self.prompts = df['prompt'].tolist()
+        self.labels = torch.tensor(df['label'].tolist(), dtype = torch.float)
+
+    def __len__(self):
+        return len(self.prompts)
+    
+    def __getitem__(self, idx):
+        # Tokenization
+        tokens = self.tokenizer.encode(self.prompts[idx])
+        n = torch.tensor(len(tokens), dtype = torch.float)
+        x = torch.tensor(tokens, dtype= torch.long)
+        y = self.labels[idx]
+        return x.to(self.device), y.to(self.device), n.to(self.device)
+    
+# Collate function: that adds rows of different lengths to the same tensor
+def collate_fn(batch):
+    X = torch.nested.nested_tensor([x for (x, y, n) in batch])
+    X.requires_grad = False
+    Y = torch.stack([y for (x, y, n) in batch])
+    Y.requires_grad = False
+    N = torch.stack([n for (x, y, n) in batch]).view(len(batch))
+    N.requires_grad = False
+    return X, Y, N
 
 class LLM_dataset:
     def __init__(self, n, type_name, classifier = 'pre') -> None:
