@@ -5,15 +5,15 @@ from dataset import *
 from tqdm.auto import tqdm
 from utils import *
 
-plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})
+#plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})
 
 # Parameters
-n = 100
+n = 500
 p = 1000
-N = 40000
+N = 2000
 gamma_pre = 1e-1
 gamma_ft = 1e-1
-batch = 10
+batch = 1
 
 # Using L^2 solutions
 alphas = np.linspace(-10, 10, 20)
@@ -32,6 +32,7 @@ for seed in seeds:
     accs_no_ft.append(empirical_accuracy('ft', batch, N, n, p, None, None, None, 0, gamma_pre, gamma_ft, data_type))
     all_accs.append(accs)
 
+np.save('all_accs.npy', np.array(all_accs))
 # Plotting results
 linewidth = 3
 

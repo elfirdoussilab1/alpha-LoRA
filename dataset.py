@@ -55,6 +55,7 @@ class LLM_dataset:
         data = loadmat(type_to_path[type_name])
         self.X = data['embeddings'] # shape (n, p)
         self.y = data['labels'][0].astype(int)
+        '''
         # Outlier removal
         gmm = GaussianMixture(n_components=2)
         gmm.fit(self.X)
@@ -68,7 +69,7 @@ class LLM_dataset:
         self.X = self.X[log_density >= threshold]
         self.y = self.y[log_density >= threshold]
         print("Finished outlier removal")
-
+        '''
         # Preprocessing: maybe we should modify this a little 
         sc = StandardScaler()
         self.X = sc.fit_transform(self.X)
@@ -103,8 +104,11 @@ def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name = 'amazon'):
     beta = np.inner(data_pre.vmu, data_ft.vmu) / (data_pre.mu**2)
 
     # Determining orthogonal mu
-    vmu_orth = (data_ft.vmu - beta * data_pre.vmu) / np.sqrt(1 - beta**2)
-
+    if beta < 1:
+        vmu_orth = (data_ft.vmu - beta * data_pre.vmu) / np.sqrt(1 - beta**2)
+    else:
+        vmu_orth = np.zeros_like(data_ft.vmu)
+        print(f'Beta {beta} is highe than 1 !')
     return data_pre, data_ft, beta, vmu_orth
 
 # Get safety dataset
