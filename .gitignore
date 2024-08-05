@@ -1,7 +1,15 @@
-*.mat
-*.DS_Store
-*.out
-*.error
-*.pth
-__pycache__
+# Ignore every file
+*
+!*/
 
+# Excepted
+!*.sh
+!*.py
+!*.ipynb
+!*.cpp
+!*.tex
+!*.pdf
+!.placeholder
+!*.png
+!*.csv
+!*.txt

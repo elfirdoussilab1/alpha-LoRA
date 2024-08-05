@@ -6,33 +6,35 @@ from tqdm.auto import tqdm
 from dataset import *
 
 # Parameters
-'''
-N = 2000
+
+N = 1000
 p = 400
 n = 20
 gamma_pre = 1
 gamma_ft = 1
 batch = 10
-'''
+''' Params for LLM
 N = 40000
 p = 1000
 n = 200
 gamma_pre = 1e-1
 gamma_ft = 1e-1
 batch = 10
+'''
 
 # Create results in a dataframe: rows = datasets (4), columns = algorithms (3)
-dataset_name = 'llm'
-#data_names = ['book', 'dvd', 'elec', 'kitchen']
-data_names = ['sentiment', 'safety']
-#data_source_target = list({(a, b) for a in data_names for b in data_names if a != b})
-data_source_target = [('safety', 'sentiment')]
+#dataset_name = 'llm'
+dataset_name = 'amazon'
+data_names = ['book', 'dvd', 'elec', 'kitchen']
+#data_names = ['sentiment', 'safety']
+data_source_target = list({(a, b) for a in data_names for b in data_names if a != b})
+#data_source_target = [('safety', 'sentiment')]
 results = pd.DataFrame(columns=['Optimal-alpha', 'No-FT', 'std-no-ft', 'Optimal','std_optimal'])
 seeds = [1, 123, 404]
 
 for source, target in data_source_target:
-    #data_type = 'amazon_' + source + '_' + target
-    data_type = 'llm_' + source + '_' + target
+    data_type = 'amazon_' + source + '_' + target
+    #data_type = 'llm_' + source + '_' + target
 
     # Datasets
     data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, source, n, target, dataset_name= dataset_name)

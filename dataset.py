@@ -11,6 +11,8 @@ import csv
 from sklearn.mixture import GaussianMixture
 from torch.utils.data import Dataset
 import pandas as pd
+import torchvision
+from torchvision.transforms import ToTensor
 
 type_to_path = {
     'book' : './datasets/Amazon_review/books.mat',
@@ -47,7 +49,94 @@ class Amazon:
         if 'ft' in classifier:
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, train_size = n / len(self.y)) 
         else: # pre
-            self.X_train, self.y_train = self.X, self.y
+            self.X_train, self.y_train = self.X[:n], self.y[:n]
+
+
+# MNIST experiments: Transfer between MNIST classes
+class MNIST:
+    def __init__(self, n, cl_1, cl_2, classifier = 'pre'):
+        # classifier can be either pre-trained (pre) or fine-tuned (ft)
+        # cl is a int
+        # Load the dataset
+        train_data = torchvision.datasets.MNIST(root = "datasets", train = True, download = True, transform = ToTensor())
+        test_data = torchvision.datasets.MNIST(root = "datasets", train = False, download = True, transform = ToTensor())
+
+        # Train data
+        X_train = train_data.data.cpu().detach().numpy() # shape (n, 28, 28)
+        X_train = X_train.reshape(X_train.shape[0], -1) # shape (n, 784)
+        y_train = train_data.targets.cpu().detach().numpy() # shape (n, )
+
+        # Test data
+        X_test = test_data.data.cpu().detach().numpy() # shape (n, 28, 28)
+        X_test = X_test.reshape(X_test.shape[0], -1) # shape (n, 784)
+        y_test = test_data.targets.cpu().detach().numpy() # shape (n, )
+        
+        # Merge
+        X = np.vstack((X_train, X_test))
+        y = np.hstack((y_train, y_test))
+
+        # Assign the desired class
+        X_1 = X[y == int(cl_1)]
+        X_2 = X[y == int(cl_2)]
+        y_1 = - np.ones(len(X_1))
+        y_2 = np.ones(len(X_2))
+
+        # Get the Binary data
+        self.X = np.vstack((X_1, X_2)).astype(float)
+        self.y = np.hstack((y_1, y_2)).astype(int)
+
+        # Make the values ranging from -1 to 1
+        self.X = (self.X - 127.5) / 127.5
+
+        # Add normal vector Z
+        self.X = self.X + np.random.randn(self.X.shape[0], (self.X.shape[1]))
+
+        # Preprocessing
+        sc = StandardScaler()
+        self.X = sc.fit_transform(self.X)
+        vmu_1 = np.mean(self.X[self.y < 0], axis = 0)
+        vmu_2 = np.mean(self.X[self.y > 0], axis = 0)
+        self.mu = np.sqrt(abs(np.inner(vmu_1, vmu_2)))
+        self.vmu = (vmu_2 - vmu_1) / 2
+
+        if 'ft' in classifier:
+            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, train_size = n / len(self.y)) 
+        else: # pre
+            self.X_train, self.y_train = self.X[:n], self.y[:n]
+
+def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name = 'amazon'):
+    if 'amazon' in dataset_name:
+        # Pre-training dataset
+        data_pre = Amazon(N, type_1, 'pre')
+
+        # Fine-tuning dataset
+        data_ft = Amazon(n, type_2, 'ft')
+
+    elif 'mnist' in dataset_name:
+        # Pre-training dataset
+        data_pre = Amazon(N, type_1, 'pre')
+
+        # Fine-tuning dataset
+        data_ft = Amazon(n, type_2, 'ft')
+
+    else: # llm
+        # Pre-training dataset
+        data_pre = LLM_dataset(N, type_1, 'pre')
+
+        # Fine-tuning dataset
+        data_ft = LLM_dataset(n, type_2, 'ft')
+
+    # determining beta
+    beta = np.inner(data_pre.vmu, data_ft.vmu) / (data_pre.mu**2)
+
+    # Determining orthogonal mu
+    if beta < 1:
+        vmu_orth = (data_ft.vmu - beta * data_pre.vmu) / np.sqrt(1 - beta**2)
+    else:
+        vmu_orth = np.zeros_like(data_ft.vmu)
+        #print(f'Beta {beta} is highe than 1 !')
+    return data_pre, data_ft, beta, vmu_orth
+
 
 # IMDB dataset for sentiment analysis
 class Sentiment(Dataset):
@@ -136,31 +225,6 @@ class LLM_dataset:
         else: # pre
             self.X_train, self.y_train = self.X, self.y
 
-def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name = 'amazon'):
-    if 'amazon' in dataset_name:
-        # Pre-training dataset
-        data_pre = Amazon(N, type_1, 'pre')
-
-        # Fine-tuning dataset
-        data_ft = Amazon(n, type_2, 'ft')
-
-    else: # llm
-        # Pre-training dataset
-        data_pre = LLM_dataset(N, type_1, 'pre')
-
-        # Fine-tuning dataset
-        data_ft = LLM_dataset(n, type_2, 'ft')
-
-    # determining beta
-    beta = np.inner(data_pre.vmu, data_ft.vmu) / (data_pre.mu**2)
-
-    # Determining orthogonal mu
-    if beta < 1:
-        vmu_orth = (data_ft.vmu - beta * data_pre.vmu) / np.sqrt(1 - beta**2)
-    else:
-        vmu_orth = np.zeros_like(data_ft.vmu)
-        #print(f'Beta {beta} is highe than 1 !')
-    return data_pre, data_ft, beta, vmu_orth
 
 # Get safety dataset
 def create_safety_dataset(path = 'unsafe_prompts.jsonl'):# ouputs a csv file
@@ -218,6 +282,3 @@ def create_safety_dataset(path = 'unsafe_prompts.jsonl'):# ouputs a csv file
         writer = csv.writer(file)
         writer.writerow(['prompt', 'label'])  # Write header
         writer.writerows(rows)  # Write rows of prompts and labels
-
-    
-#create_safety_dataset()
