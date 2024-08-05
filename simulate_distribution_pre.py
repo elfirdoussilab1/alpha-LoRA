@@ -10,17 +10,20 @@ plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.s
 fix_seed(123)
 
 # Parameters
-p = 1000
-N = 12500
-gamma = 1e-2
+p = 784
+N = 5000
+gamma = 1
+type_1 = '1_7'
+dataset_name = 'mnist'
 
 # Datasets
-train_data = LLM_dataset(N, 'sentiment_train', 'ft')
+data = MNIST(N, 6, 1, classifier= 'ft')
+#train_data = LLM_dataset(N, 'sentiment_train', 'ft')
 #test_data = LLM_dataset(N, 'sentiment_test', 'pre')
 
-mu = train_data.mu
-X_train, y_train = train_data.X_train.T, train_data.y_train
-X_test, y_test = train_data.X_test.T, train_data.y_test
+mu = data.mu
+X_train, y_train = data.X_train.T, data.y_train
+X_test, y_test = data.X_test.T, data.y_test
 
 print(X_train.shape)
 print(X_test.shape)
@@ -47,8 +50,8 @@ plt.xlabel('$\\mathbf{w}^\\top \\mathbf{x}$')
 plt.hist(X_test[:, (y_test < 0)].T @ w, color = 'tab:red', density = True, bins=25, alpha=.5, edgecolor = 'black')
 plt.hist(X_test[:, (y_test > 0)].T @ w, color = 'tab:blue', density = True, bins=25, alpha=.5, edgecolor = 'black')
 # Label: label = '$\mathcal{C}_2$'
-plt.title(f'Sentiment classifier')
+plt.title(f'{dataset_name} {type_1[0]} and {type_1[2]} classifier')
 
 plt.ylabel("Density")
-path = './study-plot' + f'/distribution_real-sentiment-N-{N}-p-{p}-mu-{round(mu, 3)}-gamma_pre-{gamma}.pdf'
+path = './study-plot' + f'/distribution_real-{dataset_name}-N-{N}-p-{p}-mu-{round(mu, 3)}-gamma_pre-{gamma}.pdf'
 plt.savefig(path, bbox_inches='tight')

@@ -76,8 +76,8 @@ class MNIST:
         y = np.hstack((y_train, y_test))
 
         # Assign the desired class
-        X_1 = X[y == int(cl_1)]
-        X_2 = X[y == int(cl_2)]
+        X_1 = X[y == cl_1]
+        X_2 = X[y == cl_2]
         y_1 = - np.ones(len(X_1))
         y_2 = np.ones(len(X_2))
 
@@ -88,8 +88,11 @@ class MNIST:
         # Make the values ranging from -1 to 1
         self.X = (self.X - 127.5) / 127.5
 
+        # Multiply each vector with a normal weight
+        #self.X = self.X * np.random.randn(self.X.shape[0], self.X.shape[1]) * 1e-1
+
         # Add normal vector Z
-        self.X = self.X + np.random.randn(self.X.shape[0], (self.X.shape[1]))
+        self.X = self.X + np.random.randn(self.X.shape[0], self.X.shape[1]) * 1e-1
 
         # Preprocessing
         sc = StandardScaler()
@@ -104,7 +107,7 @@ class MNIST:
         else: # pre
             self.X_train, self.y_train = self.X[:n], self.y[:n]
 
-def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name = 'amazon'):
+def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name):
     if 'amazon' in dataset_name:
         # Pre-training dataset
         data_pre = Amazon(N, type_1, 'pre')
@@ -113,11 +116,13 @@ def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name = 'amazon'):
         data_ft = Amazon(n, type_2, 'ft')
 
     elif 'mnist' in dataset_name:
+        cls_pre = type_1.split('_')
+        cls_ft = type_2.split('_')
         # Pre-training dataset
-        data_pre = Amazon(N, type_1, 'pre')
+        data_pre = MNIST(N, int(cls_pre[0]), int(cls_pre[1]), 'pre')
 
         # Fine-tuning dataset
-        data_ft = Amazon(n, type_2, 'ft')
+        data_ft = MNIST(n, int(cls_ft[0]), int(cls_ft[1]), 'ft')
 
     else: # llm
         # Pre-training dataset
@@ -134,7 +139,7 @@ def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name = 'amazon'):
         vmu_orth = (data_ft.vmu - beta * data_pre.vmu) / np.sqrt(1 - beta**2)
     else:
         vmu_orth = np.zeros_like(data_ft.vmu)
-        #print(f'Beta {beta} is highe than 1 !')
+        print(f'Beta {beta} is highe than 1 !')
     return data_pre, data_ft, beta, vmu_orth
 
 
@@ -282,3 +287,34 @@ def create_safety_dataset(path = 'unsafe_prompts.jsonl'):# ouputs a csv file
         writer = csv.writer(file)
         writer.writerow(['prompt', 'label'])  # Write header
         writer.writerows(rows)  # Write rows of prompts and labels
+
+# MNIST dataset to get embeddings
+# Dataset
+class CustomMnistDataset(Dataset):
+    def __init__(self, cl_1, cl_2, train, device = 'cpu'):
+        super().__init__()
+        self.device = device
+
+        data = torchvision.datasets.MNIST(root = "datasets", train = train, download = True, transform = ToTensor())
+        X = data.data.cpu().detach().numpy()
+        X = X.reshape(X.shape[0], -1)
+        y = data.targets.cpu().detach().numpy()
+        X_1 = X[y == cl_1]
+        X_2 = X[y == cl_2]
+        y_1 = np.zeros(len(X_1))
+        y_2 = np.ones(len(X_2))
+        X = np.vstack((X_1, X_2)).astype(float)
+        y = np.hstack((y_1, y_2)).astype(int)
+        
+        # Converting back to tensor
+        self.X = torch.tensor(X, dtype = torch.float)
+        self.labels = torch.tensor(y, dtype= torch.float)
+
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+        # Tokenization
+        x = self.X[idx]
+        y = self.labels[idx]
+        return x.to(self.device), y.to(self.device)

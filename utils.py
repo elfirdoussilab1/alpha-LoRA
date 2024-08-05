@@ -84,14 +84,24 @@ def empirical_accuracy(classifier, batch, N, n, p, mu, mu_orth, beta, alpha, gam
             X_ft, y_ft = generate_data(N, n, p, mu, mu_orth, beta, 'ft')[0]
             X_test, y_test = generate_data(N, n, p, mu, mu_orth, beta, classifier)[1]
 
-        else: # amazon_source_target or llm
+        elif 'amazon' in data_type: # amazon_source_target or llm
             source = data_type.split('_')[1]
             target = data_type.split('_')[2]
             data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, source, n, target, data_type)
             X_pre, y_pre = data_pre.X_train.T, data_pre.y_train
             X_ft, y_ft = data_ft.X_train.T, data_ft.y_train
             X_test, y_test = data_ft.X_test.T, data_ft.y_test
-            
+        elif 'mnist' in data_type: # mnist_clpre1_clpre2_clft1_clft2
+            l = data_type.split('_')
+            source = f'{l[1]}_{l[2]}'
+            target = f'{l[3]}_{l[4]}'
+            data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, source, n, target, data_type)
+            X_pre, y_pre = data_pre.X_train.T, data_pre.y_train
+            X_ft, y_ft = data_ft.X_train.T, data_ft.y_train
+            X_test, y_test = data_ft.X_test.T, data_ft.y_test
+
+        else: # LLM
+            print("Not yet!")
         w = classifier_vector(X_pre, y_pre, X_ft, y_ft, alpha, gamma_pre, gamma_ft, classifier)
 
         res += accuracy(y_test, decision(w, X_test))

@@ -40,7 +40,28 @@ class CustomEmbdedder:
             x = x.mean(dim = 0) # (p, )
             batch_embeddings.append(x.detach().cpu().numpy())
         return batch_embeddings
+
+# MNIST Embedder
+class MNISTEmbedder:
+    def __init__(self, p, path = 'mnist_model_6-9-p-1024-B-32.pth', device= "cpu"):
+        self.p = p
+        self.model = simple_mnist(p).to(device)
+
+        # Load the state dictionary from the file
+        state_dict = torch.load(path)
+
+        # Load the state dictionary into the model
+        self.model.load_state_dict(state_dict)
+        self.device = device
     
+    def get_embeddings(self, X):
+        # X of shape (n, 784)
+        embeddings = []
+        for i in range(X.shape[0]):
+            embeddings.append(torch.tanh(self.model.linear_1(X[i])).cpu().detach().numpy())
+        return embeddings
+
+
 ############ Old embedders #######
 
 def get_embedding_bert(prompt): 

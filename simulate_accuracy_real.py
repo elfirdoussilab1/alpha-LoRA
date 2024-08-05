@@ -6,7 +6,8 @@ from rmt_results import *
 import dataset
 
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
-# Parameters
+'''
+# Parameters Amazon
 N = 1000
 n = 100
 p = 400
@@ -15,9 +16,20 @@ gamma_ft = 1
 type_1 = 'elec'
 type_2 = 'kitchen'
 data_type = 'amazon_' + type_1 + '_' + type_2
+'''
+# Parameters MNIST
+N = 5000
+n = 50
+p = 784
+gamma_pre = 1
+gamma_ft = 1
+type_1 = '6_8'
+type_2 = '5_9'
+data_type = 'mnist_' + type_1 + '_' + type_2
+dataset_name = 'mnist'
 
 # Datasets
-data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, type_1, n, type_2)
+data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, type_1, n, type_2, dataset_name)
 mu_orth = np.linalg.norm(vmu_orth)
 mu = data_pre.mu
 X_pre, y_pre = data_pre.X_train.T, data_pre.y_train
@@ -44,5 +56,5 @@ ax.set_xlabel('$\gamma$')
 ax.set_ylabel('Test Accuracy')
 ax.grid(True)
 ax.legend()
-path = './study-plot/' + f'simulate_accuracy_real-N-{N}-n-{n}-p-{p}-alpha-{alpha}-beta-{beta}-mu-{mu}-mu_orth-{mu_orth}-gamma_pre-{gamma_pre}.pdf'
+path = './study-plot/' + f'simulate_accuracy_real-{dataset_name}-N-{N}-n-{n}-p-{p}-alpha-{alpha}-beta-{beta}-mu-{mu}-mu_orth-{mu_orth}-gamma_pre-{gamma_pre}.pdf'
 fig.savefig(path, bbox_inches='tight')

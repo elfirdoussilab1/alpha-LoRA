@@ -45,3 +45,19 @@ def replace_linear_with_ft(model, p):
             setattr(model, name, LinearWithFTLayer(module, p))
         else:
             continue
+
+# Simple MNIST model
+# Model
+class simple_mnist(nn.Module):
+    def __init__(self, p):
+        super().__init__()
+        self.linear_1 = nn.Linear(784, p)
+        self.linear_2 = nn.Linear(p, 1)
+    
+    def forward(self, x):
+        x = self.linear_1(x)
+        x = torch.tanh(x)
+        x = self.linear_2(x)
+        logits = torch.sigmoid(x) # (B, 1)
+        B = logits.shape[0]
+        return logits.view(B, )
