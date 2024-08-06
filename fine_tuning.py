@@ -12,8 +12,8 @@ wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
 # Hyperparameters
 batch_size = 64
-max_iters = 1000
-eval_interval = 10
+max_iters = 200
+eval_interval = 2
 lr = 1e-3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('Using device ', device)
@@ -121,7 +121,7 @@ for alpha in alphas:
     eval_filename = f'./results-data/train-bertii/safety-fine_tuning_B_{batch_size}_p_{p}_lr_{lr}_alpha_{alpha}.csv'
 
     model.train()
-    for i in tqdm(range(max_iters)):
+    for i in tqdm(range(max_iters + 1)):
 
         if i % eval_interval == 0:
             losses = evaluate_loss(model)
@@ -141,7 +141,7 @@ for alpha in alphas:
             results = pd.concat([results, pd.DataFrame([new_row])], ignore_index=True)
             results.set_index(['Step']).to_csv(eval_filename)
 
-            if i + eval_interval >= max_iters - 1:
+            if i == max_iters:
                 new_row = {'Alpha' : round(alpha, 3),
                            'Train Loss' : round(losses['eval'], 4),
                            'Train Accuracy' : round(accs['eval'] * 100, 2), 

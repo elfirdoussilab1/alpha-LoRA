@@ -6,7 +6,6 @@ wandb/
 # Excepted
 !*.sh
 !*.py
-!*.ipynb
 !*.cpp
 !*.tex
 !*.pdf
