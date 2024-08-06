@@ -310,7 +310,7 @@ def create_safety_dataset(path = 'unsafe_prompts.jsonl'):# ouputs a csv file
     test_data = ds['test_sft']
     safe_prompts_test = test_data['prompt'][:25000]
     test_labels = [1]*len(safe_prompts_test)
-    unsafe_prompts_test = unsafe_prompts[n:]
+    unsafe_prompts_test = unsafe_prompts[n//2:]
     test_prompts = safe_prompts_test + unsafe_prompts_test
     test_labels = test_labels + [0]*len(unsafe_prompts_test)
 
@@ -341,6 +341,8 @@ def create_safety_dataset(path = 'unsafe_prompts.jsonl'):# ouputs a csv file
         writer = csv.writer(file)
         writer.writerow(['prompt', 'label'])  # Write header
         writer.writerows(rows)  # Write rows of prompts and labels
+
+#create_safety_dataset()
 
 # MNIST dataset to get embeddings
 # Dataset
