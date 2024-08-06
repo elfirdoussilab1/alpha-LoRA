@@ -17,7 +17,7 @@ type_1 = '1_7'
 dataset_name = 'mnist'
 
 # Datasets
-data = MNIST(N, 6, 1, classifier= 'ft')
+data = MNIST_NN(N, 1, 7, classifier= 'ft')
 #train_data = LLM_dataset(N, 'sentiment_train', 'ft')
 #test_data = LLM_dataset(N, 'sentiment_test', 'pre')
 

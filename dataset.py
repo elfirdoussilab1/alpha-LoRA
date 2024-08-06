@@ -13,6 +13,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 import torchvision
 from torchvision.transforms import ToTensor
+from embedders import *
 
 type_to_path = {
     'book' : './datasets/Amazon_review/books.mat',
@@ -107,6 +108,57 @@ class MNIST:
         else: # pre
             self.X_train, self.y_train = self.X[:n], self.y[:n]
 
+class MNIST_NN:
+    def __init__(self, n, cl_1, cl_2, classifier = 'pre'):
+        # classifier can be either pre-trained (pre) or fine-tuned (ft)
+        # cl is a int
+        # Load the datasets
+        train_data = torchvision.datasets.MNIST(root = "datasets", train = True, download = True, transform = ToTensor())
+        test_data = torchvision.datasets.MNIST(root = "datasets", train = False, download = True, transform = ToTensor())
+
+        # Train data
+        X_train = train_data.data.cpu().detach().numpy() # shape (n, 28, 28)
+        X_train = X_train.reshape(X_train.shape[0], -1) # shape (n, 784)
+        y_train = train_data.targets.cpu().detach().numpy() # shape (n, )
+
+        # Test data
+        X_test = test_data.data.cpu().detach().numpy() # shape (n, 28, 28)
+        X_test = X_test.reshape(X_test.shape[0], -1) # shape (n, 784)
+        y_test = test_data.targets.cpu().detach().numpy() # shape (n, )
+        
+        # Merge
+        X = np.vstack((X_train, X_test))
+        y = np.hstack((y_train, y_test))
+
+        # Assign the desired class
+        X_1 = X[y == cl_1]
+        X_2 = X[y == cl_2]
+        y_1 = - np.ones(len(X_1))
+        y_2 = np.ones(len(X_2))
+
+        # Get the Binary data
+        X = np.vstack((X_1, X_2)).astype(float)
+        self.y = np.hstack((y_1, y_2)).astype(int)
+
+        # Get the embeddings
+        p = 1024
+        path = 'mnist_model_6-9-p-1024-B-32.pth'
+        embedder = MNISTEmbedder(p, path, 'cpu')
+        self.X = embedder.get_embeddings(torch.tensor(X, dtype = torch.float))
+
+        # Preprocessing
+        sc = StandardScaler()
+        self.X = sc.fit_transform(self.X)
+        vmu_1 = np.mean(self.X[self.y < 0], axis = 0)
+        vmu_2 = np.mean(self.X[self.y > 0], axis = 0)
+        self.mu = np.sqrt(abs(np.inner(vmu_1, vmu_2)))
+        self.vmu = (vmu_2 - vmu_1) / 2
+
+        if 'ft' in classifier:
+            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, train_size = n / len(self.y)) 
+        else: # pre
+            self.X_train, self.y_train = self.X[:n], self.y[:n]
+
 def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name):
     if 'amazon' in dataset_name:
         # Pre-training dataset
@@ -119,10 +171,12 @@ def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name):
         cls_pre = type_1.split('_')
         cls_ft = type_2.split('_')
         # Pre-training dataset
-        data_pre = MNIST(N, int(cls_pre[0]), int(cls_pre[1]), 'pre')
+        #data_pre = MNIST(N, int(cls_pre[0]), int(cls_pre[1]), 'pre')
+        data_pre = MNIST_NN(N, int(cls_pre[0]), int(cls_pre[1]), 'pre')
 
         # Fine-tuning dataset
-        data_ft = MNIST(n, int(cls_ft[0]), int(cls_ft[1]), 'ft')
+        #data_ft = MNIST(n, int(cls_ft[0]), int(cls_ft[1]), 'ft')
+        data_ft = MNIST_NN(n, int(cls_ft[0]), int(cls_ft[1]), 'ft')
 
     else: # llm
         # Pre-training dataset
