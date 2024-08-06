@@ -14,4 +14,4 @@
 eval "$(/lustre1/tier2/users/aymane.elfirdoussi/miniconda3/bin/conda shell.bash hook)"
 conda activate venv
  
-python3 train_bertii_model.py
+python3 fine_tuning.py
