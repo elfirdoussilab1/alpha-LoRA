@@ -5,10 +5,24 @@ from torch.utils.data import DataLoader
 import pandas as pd
 from tqdm.auto import tqdm
 import dataset
+import wandb
+
+wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
+
+# start a new wandb run to track this script
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="BERTII-Pretraining",
+
+    # track hyperparameters and run metadata
+    config={
+    "architecture": "Embedding + Linear",
+    "dataset": "IMDB"
+    }
+)
 
 # Hyperparameters
 batch_size = 64
-#T = 2000 # Context length
 max_iters = 2000
 eval_interval = 20
 lr = 1e-3
@@ -16,7 +30,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('Using device', device)
 
 # Embedding dimension
-p = 50
+p = 1024
 #----------
 
 # For reproducibility
@@ -85,7 +99,7 @@ train_iter = iter(train_dataloader)
 
 # Reporing results in a csv file
 results = pd.DataFrame(columns= ['Step', 'Train Loss', 'Train Accuracy', 'Test Loss', 'Test Accuracy'])
-eval_filename = f'./results-data/sentiment-training_B_{batch_size}_p_{p}.csv'
+eval_filename = f'./results-data/train-bertii/bertii-sentiment-training_B_{batch_size}_p_{p}.csv'
 
 model.train()
 for i in tqdm(range(max_iters)):
@@ -96,6 +110,8 @@ for i in tqdm(range(max_iters)):
         print("Step ", i)
         print(f"Train: Loss : {losses['eval']:.4f}  Accuracy {accs['eval']:.4f} ")
         print(f"Test: Loss {losses['test']:.4f} Accuracy {accs['test']:.4f} ")
+        wandb.log({"Train loss": losses['eval'], "Test loss": losses['test'], "Train Accuracy": accs['eval'], "Test Accuracy": accs['test']})
+
         new_row = {"Step": i,
                     'Train Loss': round(losses['eval'], 4),
                     'Train Accuracy': round(accs['eval'] * 100, 2),
@@ -123,6 +139,11 @@ for i in tqdm(range(max_iters)):
 
 print("End of Training.")
 
-model_name = f'sentiment_model_B_{batch_size}_p_{p}.pth'
+model_name = f'bertii_sentiment_model_B_{batch_size}_p_{p}.pth'
 torch.save(model.state_dict(), model_name)
 print('Model saved at ', model_name)
+
+# Finish the W&B run
+wandb.finish()
+
+print("End of Training.")
