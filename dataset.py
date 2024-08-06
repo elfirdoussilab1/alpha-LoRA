@@ -342,7 +342,41 @@ def create_safety_dataset(path = 'unsafe_prompts.jsonl'):# ouputs a csv file
         writer.writerow(['prompt', 'label'])  # Write header
         writer.writerows(rows)  # Write rows of prompts and labels
 
-#create_safety_dataset()
+def create_safety_dataset_modified(n, split, path = 'unsafe_prompts.jsonl'):# ouputs a csv file
+    # Safe prompts
+    ds = load_dataset("HuggingFaceH4/ultrachat_200k")
+    data = ds[f'{split}_sft']
+    safe_prompts = data['prompt'][:3*n//5]
+    labels = [1]*len(safe_prompts)
+
+    # Unsafe prompts
+    unsafe_prompts = []
+    # Open and read the .jsonl file
+    with open(path, 'r', encoding='utf-8') as file:
+        for line in file:
+            json_obj = json.loads(line.strip())  # Parse each line as JSON
+            if 'prompt' in json_obj:  # Check if 'prompt' key exists
+                unsafe_prompts.append(json_obj['prompt'])
+
+    unsafe_prompts = unsafe_prompts[:2*n//5]
+    labels = labels + [0]*len(unsafe_prompts)
+    prompts = safe_prompts + unsafe_prompts
+
+    print(f'{split} data lengths: prompts {len(prompts)} label {len(labels)}')
+    # Train dataset file
+    # File path where you want to save the CSV
+    csv_file = f'safety_{split}_n_{n}.csv'
+
+    # Combine prompts and labels into rows for CSV
+    rows = zip(prompts, labels)
+
+    # Write to CSV file
+    with open(csv_file, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['prompt', 'label'])  # Write header
+        writer.writerows(rows)  # Write rows of prompts and labels
+
+create_safety_dataset_modified(n = 1000, split = 'train')
 
 # MNIST dataset to get embeddings
 # Dataset
