@@ -26,7 +26,7 @@ class BerTII(nn.Module):
         return logits.view(B) # (B, )
 
 class LinearWithFTLayer(nn.Module):
-    def __init__(self, linear, p, alpha = 1):
+    def __init__(self, linear, p, alpha):
         super().__init__()
         #self.alpha = torch.nn.Parameter(torch.tensor(1, dtype = torch.float, requires_grad= True))
         self.alpha = alpha
@@ -38,11 +38,11 @@ class LinearWithFTLayer(nn.Module):
         x = self.alpha * self.linear(x) + self.V(x)
         return x
 
-def replace_linear_with_ft(model, p):
+def replace_linear_with_ft(model, p, alpha):
     for name, module in model.named_children():
         if isinstance(module, nn.Linear):
             # Replace the linear layer with LinearWithFTLayer
-            setattr(model, name, LinearWithFTLayer(module, p))
+            setattr(model, name, LinearWithFTLayer(module, p, alpha))
         else:
             continue
 
