@@ -7,15 +7,15 @@ from tqdm.auto import tqdm
 
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})
 # Parameters
-N = 5000
-n = 40
-p = 400
-mu_orth = 0.5
+N = 2000
+n = 20
+p = 500
 mu = 1.5
+mu_orth = 0.5
 gamma_pre = 1
 gamma_ft = 1
 
-betas = [0.1, 0.5, 0.9]
+betas = [0.2, 0.5, 0.8]
 linewidth = 4
 fontsize = 40
 labelsize = 35
@@ -30,11 +30,16 @@ for i, beta in enumerate(tqdm(betas)):
     
     # xmax, ymax
     alpha_max, alpha_min = optimal_alphas(N, n, p, mu, mu_orth, beta, gamma_pre, gamma_ft)
+
     acc_max = test_accuracy(N, n, p, mu, mu_orth, alpha_max, beta, gamma_pre, gamma_ft)
     acc_min = test_accuracy(N, n, p, mu, mu_orth, alpha_min, beta, gamma_pre, gamma_ft)
     acc_zero = test_accuracy(N, n, p, mu, mu_orth, 0, beta, gamma_pre, gamma_ft)
+    # LoRA
+    acc_lora = test_accuracy(N, n, p, mu, mu_orth, 1, beta, gamma_pre, gamma_ft)
+
     ax[i].plot(alphas, accs, linewidth = linewidth, color = 'tab:blue')
     ax[i].plot([alphas[0], alphas[-1]], [acc_zero, acc_zero], linewidth = linewidth, color = 'tab:orange', linestyle = '-.')
+    ax[i].plot([alphas[0], alphas[-1]], [acc_lora, acc_lora], linewidth = linewidth, color = 'tab:purple', linestyle = '-.')
     ax[i].scatter(alpha_max, acc_max, color = 'tab:green', s = s, marker = 'D')
     ax[i].scatter(alpha_min, acc_min, color = 'tab:red', s = s, marker = 'D')
     sentence_max = f'$\\alpha^*= {round(alpha_max, 2)}$'
