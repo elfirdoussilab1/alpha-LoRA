@@ -376,7 +376,7 @@ def create_safety_dataset_modified(n, split, path = 'unsafe_prompts.jsonl'):# ou
         writer.writerow(['prompt', 'label'])  # Write header
         writer.writerows(rows)  # Write rows of prompts and labels
 
-create_safety_dataset_modified(n = 1000, split = 'train')
+#create_safety_dataset_modified(n = 1000, split = 'train')
 
 # MNIST dataset to get embeddings
 # Dataset
