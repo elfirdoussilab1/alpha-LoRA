@@ -1,5 +1,5 @@
 # In this file, we will fine-tune Our BerTII pre-trained model to perform safety tasks
-from bertii_model import *
+from models import *
 import tiktoken
 from torch.utils.data import DataLoader
 import pandas as pd
@@ -12,7 +12,7 @@ wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
 # Hyperparameters
 batch_size = 64
-max_iters = 200
+max_iters = 50
 eval_interval = 2
 lr = 1e-3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -20,6 +20,7 @@ print('Using device ', device)
 
 # Embedding dimesion
 p = 1024
+k = 1
 alphas = np.linspace(-5, 5, 20)
 
 # Loss function
@@ -85,33 +86,46 @@ def evaluate_accuracy(model):
 global_result = pd.DataFrame(columns= ['Alpha', 'Train Loss', 'Train Accuracy', 'Test Loss', 'Test Accuracy'])
 global_filename = f'./results-data/train-bertii/summary-safety-fine_tuning_B_{batch_size}_p_{p}_lr_{lr}.csv'
 
+# Evaluate Pre-trained model on target dataset
+losses = evaluate_loss(pre_model)
+accs = evaluate_accuracy(pre_model)
+new_row = {'Alpha' : 'No-FT',
+            'Train Loss' : round(losses['eval'], 4),
+            'Train Accuracy' : round(accs['eval'] * 100, 2), 
+            'Test Loss' : round(losses['test'], 4), 
+            'Test Accuracy' : round(accs['test']*100, 2)}
+global_result= pd.concat([global_result, pd.DataFrame([new_row])], ignore_index=True)
+global_result.set_index(['Alpha']).to_csv(global_filename)
+
 for alpha in alphas:
     # start a new wandb run to track this script
     wandb.init(
         # set the wandb project where this run will be logged
-        project="BERTII-Fine-tuning",
+        project=f"BERTII-Fine-tuning",
 
         # track hyperparameters and run metadata
         config={
         "architecture": "Embedding + Linear",
         "dataset": "IMDB",
         "Alpha": round(alpha, 3)
-        }
+        },
+        name = f'run_{round(alpha, 3)}'
     )
 
     # initializing with the base model
-    model = pre_model
+    model = BerTII(p, vocab_size).to(device)
+    model.load_state_dict(torch.load(f'bertii_sentiment_model_B_64_p_1024.pth'))
 
     # Setting the model to fine-tuning mode
     for param in model.parameters():
         param.requires_grad = False
-    replace_linear_with_ft(model, p, alpha)
+    replace_linear_with_ft(model, p, k, alpha)
     model = model.to(device)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f'Total number of Fine-tuning parameters {total_params:,}') # p (the Linear V)
 
     # Optimizer
-    optimizer = torch.optim.AdamW(model.parameters(), lr = lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr = lr, fused = True)
 
     # Fine-tuning Loop
     train_iter = iter(train_dataloader)
@@ -147,8 +161,8 @@ for alpha in alphas:
                            'Train Accuracy' : round(accs['eval'] * 100, 2), 
                            'Test Loss' : round(losses['test'], 4), 
                            'Test Accuracy' : round(accs['test']*100, 2)}
-            global_result= pd.concat([global_result, pd.DataFrame([new_row])], ignore_index=True)
-            global_result.set_index(['Step']).to_csv(global_filename)
+                global_result= pd.concat([global_result, pd.DataFrame([new_row])], ignore_index=True)
+                global_result.set_index(['Alpha']).to_csv(global_filename)
 
         # sample a batch
         batch = next(train_iter, None)
@@ -171,6 +185,8 @@ for alpha in alphas:
     model_name = f'./fine-tuned-models/ft_safety_model_B_{batch_size}_p_{p}_alpha_{round(alpha, 3)}.pth'
     torch.save(model.state_dict(), model_name)
     print('Model saved at ', model_name)
+    # Finish the W&B run
+    wandb.finish()
 
 # Finish the W&B run
 wandb.finish()

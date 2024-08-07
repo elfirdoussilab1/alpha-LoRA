@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from datasets import load_dataset
 import torch
-from bertii_model import *
+from models import *
 import json
 import csv
 from sklearn.mixture import GaussianMixture

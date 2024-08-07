@@ -1,5 +1,5 @@
 # This file will be used to train the sentiment analysis model
-from bertii_model import *
+from models import *
 import tiktoken
 from torch.utils.data import DataLoader
 import pandas as pd

@@ -1,7 +1,7 @@
 # In this file, we will implement embedders
 import torch
 import tiktoken
-from bertii_model import *
+from models import *
 from typing import List, Union
 from tqdm.auto import tqdm
 import numpy as np

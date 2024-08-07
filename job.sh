@@ -6,8 +6,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
-#SBATCH --gres=gpu:4
-#SBATCH --time=4:00:00
+#SBATCH --gres=gpu:2
 #SBATCH --exclude=t01pdscgpu01
  
  
