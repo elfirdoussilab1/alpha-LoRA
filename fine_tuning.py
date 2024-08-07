@@ -1,5 +1,5 @@
 # In this file, we will fine-tune Our BerTII pre-trained model to perform safety tasks
-from bertii_model import *
+from models import *
 import tiktoken
 from torch.utils.data import DataLoader
 import pandas as pd
@@ -20,6 +20,7 @@ print('Using device ', device)
 
 # Embedding dimesion
 p = 1024
+k = 1
 alphas = np.linspace(-5, 5, 20)
 
 # Loss function
@@ -118,7 +119,7 @@ for alpha in alphas:
     # Setting the model to fine-tuning mode
     for param in model.parameters():
         param.requires_grad = False
-    replace_linear_with_ft(model, p, alpha)
+    replace_linear_with_ft(model, p, k, alpha)
     model = model.to(device)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f'Total number of Fine-tuning parameters {total_params:,}') # p (the Linear V)

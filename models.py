@@ -26,28 +26,28 @@ class BerTII(nn.Module):
         return logits.view(B) # (B, )
 
 class LinearWithFTLayer(nn.Module):
-    def __init__(self, linear, p, alpha):
+    def __init__(self, linear, p, k, alpha):
         super().__init__()
         #self.alpha = torch.nn.Parameter(torch.tensor(1, dtype = torch.float, requires_grad= True))
         self.alpha = alpha
         #self.alpha.requires_grad = True
         self.linear = linear
-        self.V = nn.Linear(p, 1, bias = False)
+        self.V = nn.Linear(p, k, bias = False)
 
     def forward(self, x):
         x = self.alpha * self.linear(x) + self.V(x)
         return x
 
-def replace_linear_with_ft(model, p, alpha):
+def replace_linear_with_ft(model, p, k, alpha):
     for name, module in model.named_children():
         if isinstance(module, nn.Linear):
             # Replace the linear layer with LinearWithFTLayer
-            setattr(model, name, LinearWithFTLayer(module, p, alpha))
+            setattr(model, name, LinearWithFTLayer(module, p, k, alpha))
         else:
             continue
 
 # Simple MNIST model
-# Model
+# Binary classification
 class simple_mnist(nn.Module):
     def __init__(self, p):
         super().__init__()
@@ -61,3 +61,5 @@ class simple_mnist(nn.Module):
         logits = torch.sigmoid(x) # (B, 1)
         B = logits.shape[0]
         return logits.view(B, )
+
+# Multi-class classification
