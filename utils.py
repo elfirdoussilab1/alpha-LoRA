@@ -46,10 +46,13 @@ def generate_data(N, n, p, mu, mu_orth, beta, classifier = 'ft'):
         return gaussian_mixture(N, vmu), gaussian_mixture(20*N, vmu)
 
 # Let us define classifier expression
-def classifier_vector(X_pre, y_pre, X_ft, y_ft, alpha, gamma_pre, gamma_ft, classifier = 'ft'):
+def classifier_vector(X_pre, y_pre, X_ft, y_ft, alpha, gamma_pre, gamma_ft, classifier = 'ft', w_tilde = None):
     # Pre-training classifier
-    q_pre = np.linalg.solve(X_pre @ X_pre.T / X_pre.shape[1] + gamma_pre * np.eye(X_pre.shape[0]), np.eye(X_pre.shape[0]))
-    w_pre = q_pre @ X_pre @ y_pre / X_pre.shape[1]
+    if w_tilde is None:
+        q_pre = np.linalg.solve(X_pre @ X_pre.T / X_pre.shape[1] + gamma_pre * np.eye(X_pre.shape[0]), np.eye(X_pre.shape[0]))
+        w_pre = q_pre @ X_pre @ y_pre / X_pre.shape[1]
+    else:
+        w_pre = w_tilde
 
     if 'pre' in classifier:
         return w_pre
@@ -151,6 +154,88 @@ def empirical_risk(classifier, batch, N, n, p, mu, mu_orth, beta, alpha, gamma_p
 
         res += L2_loss(w, X_test, y_test)
     return res / batch
+
+
+###------------------------ Functions for arbitrary classifier -----------------------
+def empirical_accuracy_arbitrary(batch, n, p, w_tilde, vmu_beta, alpha, gamma, data_type = 'synthetic'):
+    # n is the number of target data
+    res = 0
+    assert len(vmu_beta) == p
+    for i in range(batch):
+        if 'synthetic' in data_type:
+            X_train, y_train = gaussian_mixture(n, vmu_beta)
+            X_test, y_test = gaussian_mixture(20*n, vmu_beta)
+        elif 'amazon' in data_type: # amazon_target
+            target = data_type.split('_')[1]
+            data = dataset.Amazon(n, target, 'pre')
+            X_test, y_test = data.X_test.T, data.y_test
+            X_train, y_train = data.X_train.T, data.y_train
+        else:
+            print("Not implemented yet !")
+        
+        w = classifier_vector(None, None, X_train, y_train, alpha, None, gamma, 'ft', w_tilde)
+        res += accuracy(y_test, decision(w_tilde, X_test))
+    return res / batch
+
+def empirical_mean_arbitrary(batch, n, p, w_tilde, vmu_beta, alpha, gamma, data_type = 'synthetic'):
+    # n is the number of target data
+    res = 0
+    assert len(vmu_beta) == p
+    for i in range(batch):
+        if 'synthetic' in data_type:
+            X_train, y_train = gaussian_mixture(n, vmu_beta)
+            X_test, y_test = gaussian_mixture(20*n, vmu_beta)
+        elif 'amazon' in data_type: # amazon_target
+            target = data_type.split('_')[1]
+            data = dataset.Amazon(n, target, 'ft')
+            X_test, y_test = data.X_test.T, data.y_test
+            X_train, y_train = data.X_train.T, data.y_train
+        else:
+            print("Not implemented yet !")
+        
+        w = classifier_vector(None, None, X_train, y_train, alpha, None, gamma, 'ft', w_tilde)
+        res += np.mean(y_test * (X_test.T @ w))
+    return res / batch
+
+def empirical_mean_2_arbitrary(batch, n, p, w_tilde, vmu_beta, alpha, gamma, data_type = 'synthetic'):
+    # n is the number of target data
+    res = 0
+    assert len(vmu_beta) == p
+    for i in range(batch):
+        if 'synthetic' in data_type:
+            X_train, y_train = gaussian_mixture(n, vmu_beta)
+            X_test, y_test = gaussian_mixture(20*n, vmu_beta)
+        elif 'amazon' in data_type: # amazon_target # Not tested yet
+            target = data_type.split('_')[1]
+            data = dataset.Amazon(n, target, 'ft')
+            X_test, y_test = data.X_test.T, data.y_test
+            X_train, y_train = data.X_train.T, data.y_train
+        else:
+            print("Not implemented yet !")
+        
+        w = classifier_vector(None, None, X_train, y_train, alpha, None, gamma, 'ft', w_tilde)
+        res += np.mean((X_test.T @ w)**2)
+    return res / batch
+
+def empirical_risk_arbitrary(batch, n, p, w_tilde, vmu_beta, alpha, gamma, data_type = 'synthetic'):
+    # n is the number of target data
+    res = 0
+    assert len(vmu_beta) == p
+    for i in range(batch):
+        if 'synthetic' in data_type:
+            X_train, y_train = gaussian_mixture(n, vmu_beta)
+            X_test, y_test = gaussian_mixture(20*n, vmu_beta)
+        elif 'amazon' in data_type: # amazon_target
+            target = data_type.split('_')[1]
+            data = dataset.Amazon(n, target, 'ft')
+            X_test, y_test = data.X_test.T, data.y_test
+            X_train, y_train = data.X_train.T, data.y_train
+        else:
+            print("Not implemented yet !")
+        
+        w = classifier_vector(None, None, X_train, y_train, alpha, None, gamma, 'ft', w_tilde)
+        res += L2_loss(w, X_test, y_test)
+    return res / batch   
 
 # Gaussian density function
 def gaussian(x, mean, std):
