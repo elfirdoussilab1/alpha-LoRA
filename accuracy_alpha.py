@@ -20,7 +20,7 @@ linewidth = 4
 fontsize = 40
 labelsize = 35
 s = 250
-alphas = np.linspace(-20, 20, 1000)
+alphas = np.linspace(-10, 10, 1000)
 fig, ax = plt.subplots(1, 3, figsize = (30, 6))
 
 for i, beta in enumerate(tqdm(betas)):
