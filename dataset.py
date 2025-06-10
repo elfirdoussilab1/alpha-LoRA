@@ -20,10 +20,10 @@ type_to_path = {
     'dvd' : './datasets/Amazon_review/dvd.mat',
     'elec' : './datasets/Amazon_review/elec.mat',
     'kitchen' : './datasets/Amazon_review/kitchen.mat',
-    'sentiment_train': 'sentiment_train.mat',
-    'sentiment_test': 'sentiment_test.mat',
-    'sentiment': 'sentiment.mat',
-    'safety': 'safety.mat'
+    'sentiment_train': 'sentiment_train.mat', # path not correct
+    'sentiment_test': 'sentiment_test.mat', # path not correct
+    'sentiment': 'sentiment.mat', # path not correct
+    'safety': 'safety.mat' # path not correct
 
 }
 
@@ -153,6 +153,11 @@ class MNIST_NN:
         vmu_2 = np.mean(self.X[self.y > 0], axis = 0)
         self.mu = np.sqrt(abs(np.inner(vmu_1, vmu_2)))
         self.vmu = (vmu_2 - vmu_1) / 2
+        
+        # Shuffle the data
+        permutation_indices = np.random.permutation(len(self.X))
+        self.X = self.X[permutation_indices]
+        self.y = self.y[permutation_indices]
 
         if 'ft' in classifier:
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, train_size = n / len(self.y)) 
@@ -189,11 +194,7 @@ def create_pre_ft_datasets(N, type_1, n, type_2, dataset_name):
     beta = np.inner(data_pre.vmu, data_ft.vmu) / (data_pre.mu**2)
 
     # Determining orthogonal mu
-    if beta < 1:
-        vmu_orth = (data_ft.vmu - beta * data_pre.vmu) / np.sqrt(1 - beta**2)
-    else:
-        vmu_orth = np.zeros_like(data_ft.vmu)
-        print(f'Beta {beta} is highe than 1 !')
+    vmu_orth = data_ft.vmu - beta * data_pre.vmu
     return data_pre, data_ft, beta, vmu_orth
 
 

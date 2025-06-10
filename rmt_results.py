@@ -1,8 +1,6 @@
 # In this file, we will implement all the theoretical results gotten using RMT
 import numpy as np
-from utils import *
 import scipy.integrate as integrate
-import utils
 
 # General quantities
 def Delta(eta, gamma):
@@ -65,7 +63,7 @@ def test_accuracy(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft):
     mean = test_expectation(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft)
     expec_2 = test_expectation_2(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft)
     std = np.sqrt(expec_2 - mean**2)
-    return 1 - integrate.quad(lambda x: utils.gaussian(x, 0, 1), abs(mean)/std, np.inf)[0]
+    return 1 - integrate.quad(lambda x: gaussian(x, 0, 1), abs(mean)/std, np.inf)[0]
 
 def test_risk(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft):
     # E[g] and E(g^2)
@@ -163,7 +161,7 @@ def test_accuracy_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma):
     mean = test_expectation_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma)
     expec_2 = test_expectation_2_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma)
     std = np.sqrt(expec_2 - mean**2)
-    return 1 - integrate.quad(lambda x: utils.gaussian(x, 0, 1), abs(mean)/std, np.inf)[0]
+    return 1 - integrate.quad(lambda x: gaussian(x, 0, 1), abs(mean)/std, np.inf)[0]
 
 def test_risk_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma):
     # E[g] and E(g^2)
@@ -187,3 +185,7 @@ def optimal_alphas_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma):
     alpha_min = - mu_beta_2 / (gamma * (1 + delta) * sc)
 
     return alpha_max, alpha_min
+
+# Gaussian density function
+def gaussian(x, mean, std):
+    return np.exp(- (x - mean)**2 / (2 * std**2)) / (std * np.sqrt(2 * np.pi))

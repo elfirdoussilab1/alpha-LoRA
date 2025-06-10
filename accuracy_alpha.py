@@ -1,21 +1,21 @@
 # In this file, we verify our alpha_max obtained theoretically
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import *
+#from utils import *
 from rmt_results import *
 from tqdm.auto import tqdm
 
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})
 # Parameters
-N = 2000
-n = 20
-p = 500
-mu = 1.5
-mu_orth = 0.5
+N = 5000
+n = 40
+p = 400
+mu = 0.7
+mu_orth = 0.7
 gamma_pre = 1
 gamma_ft = 1
 
-betas = [0.2, 0.5, 0.8]
+betas = [0.2, 0.5, 0.9]
 linewidth = 4
 fontsize = 40
 labelsize = 35
