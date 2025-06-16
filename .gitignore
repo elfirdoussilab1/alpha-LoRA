@@ -12,3 +12,4 @@ wandb/
 !.placeholder
 !*.png
 !*.csv
+!*.ipynb

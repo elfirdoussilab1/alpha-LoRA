@@ -61,5 +61,3 @@ class simple_mnist(nn.Module):
         logits = torch.sigmoid(x) # (B, 1)
         B = logits.shape[0]
         return logits.view(B, )
-
-# Multi-class classification
