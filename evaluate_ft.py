@@ -72,12 +72,3 @@ plt.legend()
 path = './study-plot/' + f'evaluate_ft_L2-N-{N}-n-{n}-p-{p}-gamma_pre-{gamma_pre}-gamma_ft-{gamma_ft}.pdf'
 plt.savefig(path, bbox_inches='tight')
 
-
-
-
-
-
-
-
-
-

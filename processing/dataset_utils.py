@@ -91,9 +91,9 @@ def partition_dataset(df):
 
     if not op.exists("data"):
         os.makedirs("data")
-    df_train.to_csv(op.join("data", "train.csv"), index=False, encoding="utf-8")
-    df_val.to_csv(op.join("data", "val.csv"), index=False, encoding="utf-8")
-    df_test.to_csv(op.join("data", "test.csv"), index=False, encoding="utf-8")
+    df_train.to_csv(op.join("data/sentiment", "train.csv"), index=False, encoding="utf-8")
+    df_val.to_csv(op.join("data/sentiment", "val.csv"), index=False, encoding="utf-8")
+    df_test.to_csv(op.join("data/sentiment", "test.csv"), index=False, encoding="utf-8")
 
 
 class IMDBDataset(Dataset):
