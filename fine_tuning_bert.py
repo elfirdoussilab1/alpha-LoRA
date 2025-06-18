@@ -44,7 +44,7 @@ train_loader = DataLoader(
     dataset=train_dataset,
     batch_size=64,
     shuffle=True,
-    num_workers=os.cpu_count() // 2
+    num_workers=4
 )
 
 val_loader = DataLoader(
