@@ -70,7 +70,8 @@ def evaluate_model(model):
 
     for split in ['val', 'test']:
         data_loader = loader[split]
-        acc = 0
+        total_correct = 0
+        total_samples = 0
         for batch in data_loader:
             input_ids = batch['input_ids'].to(device)
             attention_mask = batch['attention_mask'].to(device)
@@ -82,55 +83,60 @@ def evaluate_model(model):
             # Calculate accuracy
             logits = outputs.logits
             predictions = torch.argmax(logits, dim=-1)
-            acc += (predictions == labels).sum().item()
-        out[split + '_acc'] = acc / len(data_loader)
+            total_correct += (predictions == labels).sum().item()
+            total_samples += labels.size(0) # Add the number of samples in the current batch
+        
+        # Calculate accuracy over the entire dataset
+        out[split + '_acc'] = total_correct / total_samples
     return out
 
 def train(model, args):
-    # Set up the optimizer and loss function
     optimizer = AdamW(model.parameters(), lr=args.lr)
-
-    # Move the model to the specified device (GPU or CPU)
     n = len(train_loader)
-
+    
     for epoch in range(args.n_epochs):
-        # Training over this epoch
         model.train()
-        train_loss = 0
-        train_acc = 0
+        total_train_loss = 0
+        total_train_correct = 0
 
-        for i, batch in enumerate(train_loader):
-
-            if i % args.inter_eval == 0:
-                # Evaluate the model
+        # Use tqdm for a progress bar
+        for i, batch in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.n_epochs}")):
+            if i > 0 and i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
                 evals = evaluate_model(model)
-                #print(f'Val Accuracy = {evals["val_acc"]}, Val Loss = {evals["val_loss"]},  Test Accuracy = {evals["test_acc"]}, Test Loss = {evals["test_loss"]}')
-                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"]})
+                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"]}, step=i)
                 model.train()
 
-            # Move batch data to the correct device
             input_ids = batch['input_ids'].to(device)
             attention_mask = batch['attention_mask'].to(device)
             labels = batch['label'].to(device)
 
-            # Zero out the gradients from the previous iteration
             optimizer.zero_grad()
-
-            # Perform a forward pass
             outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
             loss = outputs.loss
-            train_loss += loss.item() / n
-
+            
             loss.backward()
             optimizer.step()
 
-            # Update Train accuracy
+            total_train_loss += loss.item()
+            
             logits = outputs.logits
             predictions = torch.argmax(logits, dim=-1)
-            train_acc += (predictions == labels).sum().item() / n
-            wandb.log({"Train Loss": loss.item()})
-        wandb.log({"Train Accuracy": train_acc})
-        print(f'Finished Epoch {epoch} / {args.n_epochs}: Train Loss = {train_loss}, Train Accuracy = {train_acc}')
+            total_train_correct += (predictions == labels).sum().item()
+            
+            # Log batch loss less frequently or not at all, to avoid noisy charts
+            if i % 10 == 0:
+                 wandb.log({"Train Loss (batch)": loss.item()})
+        
+        # Calculate and log epoch-level metrics
+        avg_train_loss = total_train_loss / n
+        train_accuracy = total_train_correct / len(train_loader.dataset)
+        
+        wandb.log({
+            "Train Accuracy": train_accuracy,
+            "Train Loss (epoch)": avg_train_loss,
+            "Epoch": epoch
+        })
+        print(f'Finished Epoch {epoch+1} / {args.n_epochs}: Train Loss = {avg_train_loss:.4f}, Train Accuracy = {train_accuracy:.4f}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on IMDB dataset")
