@@ -153,7 +153,7 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Apply LoRA
-    replace_linear_with_lora(model, args.rank, args.alpha, args.alpha_r)
+    replace_linear_with_lora(model, args.rank, args.alpha, args.alpha_r, device)
 
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())
