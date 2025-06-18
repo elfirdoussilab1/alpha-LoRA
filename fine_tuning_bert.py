@@ -21,9 +21,6 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 def tokenize_text(batch, truncation = True):
     return tokenizer(batch["text"], truncation=truncation, padding=True)
 
-df_train = pd.read_csv(os.path.join("data/sentiment", "train.csv"))
-df_val = pd.read_csv(os.path.join("data/sentiment", "val.csv"))
-df_test = pd.read_csv(os.path.join("data/sentiment", "test.csv"))
 imdb_dataset = load_dataset(
     "csv",
     data_files={
@@ -47,19 +44,19 @@ train_loader = DataLoader(
     dataset=train_dataset,
     batch_size=64,
     shuffle=True,
-    num_workers=1
+    num_workers=os.cpu_count() // 2
 )
 
 val_loader = DataLoader(
     dataset=val_dataset,
     batch_size=32,
-    num_workers=1
+    num_workers=os.cpu_count() // 2
 )
 
 test_loader = DataLoader(
     dataset=test_dataset,
     batch_size=32,
-    num_workers=1
+    num_workers=os.cpu_count() // 2
 )
 loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
 
