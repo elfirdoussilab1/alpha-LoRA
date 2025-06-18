@@ -50,13 +50,13 @@ train_loader = DataLoader(
 val_loader = DataLoader(
     dataset=val_dataset,
     batch_size=32,
-    num_workers=os.cpu_count() // 2
+    num_workers=2
 )
 
 test_loader = DataLoader(
     dataset=test_dataset,
     batch_size=32,
-    num_workers=os.cpu_count() // 2
+    num_workers=2
 )
 loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
 
