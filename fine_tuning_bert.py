@@ -14,6 +14,7 @@ import argparse
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print("Using device: ", device)
 
 # Datasets
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")

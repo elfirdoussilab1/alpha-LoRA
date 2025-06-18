@@ -65,7 +65,7 @@ class LoRALinear(nn.Module):
         x = self.linear(self.alpha * x) +  (x @ self.lora_A @ self.lora_B) * self.alpha_r / self.rank
         return x
 
-def replace_linear_with_lora(model, rank, alpha, alpha_r):
+def replace_linear_with_lora(model, rank, alpha, alpha_r, device):
     # Freeze the model weights
     for param in model.parameters():
         param.requires_grad = False
@@ -79,7 +79,7 @@ def replace_linear_with_lora(model, rank, alpha, alpha_r):
                     rank,
                     alpha=alpha,
                     alpha_r=alpha_r  # only if your implementation uses it
-                )
+                ).to(device)
 
                 # Replace the linear layer with the LoRA version
                 setattr(module, name, lora_layer)
