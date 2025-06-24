@@ -108,7 +108,7 @@ def train(model, args):
             if i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
                 evals = evaluate_model(model)
                 #new_alpha = model.classifier.alpha.detach().cpu().numpy()
-                new_alpha = model.roberta.encoder.layer[0].attention.self.query.alpha.item().detach().cpu().numpy()
+                new_alpha = model.roberta.encoder.layer[0].attention.self.query.alpha.detach().cpu().numpy()
                 wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"], "Alpha": new_alpha}, step=epoch * n + i)
                 if evals["test_acc"] > best_acc:
                     best_acc = evals["test_acc"]
