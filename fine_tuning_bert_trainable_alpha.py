@@ -103,9 +103,9 @@ def train(model, args):
                 if evals["test_acc"] > best_acc:
                     best_acc = evals["test_acc"]
                     print("Saving new best model weights...")
-                    model_name = f'bert_sentiment_model_alpha_{args.alpha}.pth'
+                    model_name = f'bert_sentiment_model_alpha_trainable.pth'
                     torch.save(model.state_dict(), model_name)
-                    print('Model saved at ', model_name)
+                    print('Model saved at: ', model_name)
                 model.train()
 
             input_ids = batch['input_ids'].to(device)
@@ -144,8 +144,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on IMDB dataset")
 
     # Training arguments
-    parser.add_argument("--n_epochs", type=int, default=3, help="Number of training epochs")
-    parser.add_argument("--lr", type=float, default=2e-4, help="Learning rate")
+    parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
+    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--inter_eval", type=int, default=100, help="Steps between intermediate evaluations")
 
     # LoRA parameters
