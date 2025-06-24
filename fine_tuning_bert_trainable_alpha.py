@@ -3,7 +3,7 @@ from datasets import load_dataset
 import torch
 from processing.dataset_utils import IMDBDataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from model import replace_linear_with_lora
+from model import *
 import wandb
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -16,7 +16,8 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
 
 # Datasets
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+model_name = "distilbert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 def tokenize_text(batch, truncation = True):
     return tokenizer(batch["text"], truncation=truncation, padding=True)
 
@@ -87,7 +88,11 @@ def evaluate_model(model):
     return out
 
 def train(model, args):
-    optimizer = AdamW(model.parameters(), lr=args.lr)
+    lora_params, alpha_params = optimize_lora(model)
+    param_groups = [{'params': lora_params, 'lr': args.lr_lora},
+    {'params': alpha_params, 'lr': args.lr_alpha}]
+
+    optimizer = AdamW(param_groups)
     n = len(train_loader)
     best_acc = 0
     for epoch in range(args.n_epochs):
@@ -99,7 +104,7 @@ def train(model, args):
         for i, batch in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.n_epochs}")):
             if i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
                 evals = evaluate_model(model)
-                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"], "Alpha": model.classifier.alpha.detach().cpu().numpy()}, step=i)
+                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"], "Alpha": model.classifier.alpha.detach().cpu().numpy()}, step=epoch * n + i)
                 if evals["test_acc"] > best_acc:
                     best_acc = evals["test_acc"]
                     print("Saving new best model weights...")
@@ -145,7 +150,8 @@ if __name__ == "__main__":
 
     # Training arguments
     parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
-    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
+    parser.add_argument("--lr_lora", type=float, default=1e-4, help="Learning rate for A and B")
+    parser.add_argument("--lr_alpha", type=float, default=1e-3, help="Learning rate for")
     parser.add_argument("--inter_eval", type=int, default=100, help="Steps between intermediate evaluations")
 
     # LoRA parameters
@@ -157,7 +163,7 @@ if __name__ == "__main__":
     if args.alpha_r is None:
         args.alpha_r = args.rank
     
-    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
     model = model.to(device)
 
     # Apply LoRA
@@ -172,11 +178,11 @@ if __name__ == "__main__":
     # start a new wandb run to track this script
     wandb.init(
         # set the wandb project where this run will be logged
-        project=f"BERT-Fine-tuning",
+        project=f"Fine-tuning-{model_name}",
 
         # track hyperparameters and run metadata
         config={
-        "architecture": "DistilBERT",
+        "architecture": model_name,
         "dataset": "IMDB"
         },
         name = f'alpha_trainable'

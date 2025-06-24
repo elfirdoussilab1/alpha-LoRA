@@ -65,29 +65,49 @@ class LoRALinear(nn.Module):
         x = self.linear(self.alpha * x) +  (x @ self.lora_A @ self.lora_B) * self.alpha_r / self.rank
         return x
 
-def replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha = False):
-    # Freeze the model weights
+def replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha=False):
+    """
+    Replaces all nn.Linear layers in a model with LoRALinear layers,
+    explicitly skipping nn.Embedding layers.
+    """
+    # Freeze all original model weights
     for param in model.parameters():
         param.requires_grad = False
     
-    # Now replace linear with LoRA weights
+    # Recursive function to replace layers
     def _replace(module):
         for name, child in module.named_children():
+            # If the child is a Linear layer, replace it with a LoRALinear layer
             if isinstance(child, nn.Linear):
-                # Create a new LoRALinear instance
-                lora_layer = LoRALinear(child,
+                lora_layer = LoRALinear(
+                    child,
                     rank,
                     alpha=alpha,
-                    alpha_r=alpha_r,  # only if your implementation uses it
-                    train_alpha = train_alpha
+                    alpha_r=alpha_r,
+                    train_alpha=train_alpha
                 ).to(device)
-
-                # Replace the linear layer with the LoRA version
                 setattr(module, name, lora_layer)
 
+            # Explicitly skip embedding layers and do not recurse into them
+            elif isinstance(child, nn.Embedding):
+                print(f"Skipping embedding layer: {name}")
+                continue
+            
+            # For all other module types, recurse
             else:
-                # Recursively apply to child modules
                 _replace(child)
 
     _replace(model)
-           
+
+def optimize_lora(model):
+    # The model given as input should only have lora weights trainable
+    # Additionally, this method is designed for the case of alpha trainable
+    lora_params = []
+    alpha_params = []
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            if 'lora_' in name:
+                lora_params.append(param)
+            elif 'alpha' in name:
+                alpha_params.append(param)
+    return lora_params, alpha_params
