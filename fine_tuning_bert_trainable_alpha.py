@@ -99,7 +99,7 @@ def train(model, args):
         for i, batch in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.n_epochs}")):
             if i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
                 evals = evaluate_model(model)
-                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"], "Alpha": model.classifier.alpha.item()}, step=i)
+                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"], "Alpha": model.classifier.alpha.detach().cpu().numpy()}, step=i)
                 if evals["test_acc"] > best_acc:
                     best_acc = evals["test_acc"]
                     print("Saving new best model weights...")
