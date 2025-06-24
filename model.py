@@ -90,7 +90,6 @@ def replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha=Fa
 
             # Explicitly skip embedding layers and do not recurse into them
             elif isinstance(child, nn.Embedding):
-                print(f"Skipping embedding layer: {name}")
                 continue
             
             # For all other module types, recurse
