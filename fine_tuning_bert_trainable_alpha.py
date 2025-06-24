@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
-    parser.add_argument("--alpha", type=float, default=0.5, help="LoRA alpha (input scaling)")
+    parser.add_argument("--alpha", type=float, default=0.5, help="LoRA alpha initialization")
     parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
 
     args = parser.parse_args()
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Apply LoRA
-    replace_linear_with_lora(model, args.rank, args.alpha, args.alpha_r, device)
+    replace_linear_with_lora(model, args.rank, args.alpha, args.alpha_r, device, train_alpha = True)
 
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())
@@ -178,10 +178,9 @@ if __name__ == "__main__":
         # track hyperparameters and run metadata
         config={
         "architecture": "DistilBERT",
-        "dataset": "IMDB",
-        "Alpha": round(args.alpha, 3)
+        "dataset": "IMDB"
         },
-        name = f'alpha_{round(args.alpha, 3)}'
+        name = f'alpha_trainable'
     )
     
     # Start training

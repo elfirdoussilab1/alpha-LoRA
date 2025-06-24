@@ -43,7 +43,7 @@ class simple_mnist(nn.Module):
         return logits.view(B, )
 
 class LoRALinear(nn.Module):
-    def __init__(self, linear, rank, alpha, alpha_r):
+    def __init__(self, linear, rank, alpha, alpha_r, train_alpha = False):
         super().__init__()
         # These are the weights from the original pretrained model
         self.linear = linear
@@ -57,7 +57,7 @@ class LoRALinear(nn.Module):
         
         # Other parameters of lora
         self.rank = rank 
-        self.alpha = alpha # This is our alpha parameter in the theory
+        self.alpha = nn.Parameter(torch.tensor(alpha, dtype = torch.float), requires_grad = train_alpha) # This is our alpha parameter in the theory
         self.alpha_r = alpha_r # This is the old alpha used in Pytorch
         # we can also set: self.alpha = nn.Parameter(..) if we want to make it trainable
     
@@ -65,7 +65,7 @@ class LoRALinear(nn.Module):
         x = self.linear(self.alpha * x) +  (x @ self.lora_A @ self.lora_B) * self.alpha_r / self.rank
         return x
 
-def replace_linear_with_lora(model, rank, alpha, alpha_r, device):
+def replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha = False):
     # Freeze the model weights
     for param in model.parameters():
         param.requires_grad = False
@@ -78,7 +78,8 @@ def replace_linear_with_lora(model, rank, alpha, alpha_r, device):
                 lora_layer = LoRALinear(child,
                     rank,
                     alpha=alpha,
-                    alpha_r=alpha_r  # only if your implementation uses it
+                    alpha_r=alpha_r,  # only if your implementation uses it
+                    train_alpha = train_alpha
                 ).to(device)
 
                 # Replace the linear layer with the LoRA version
