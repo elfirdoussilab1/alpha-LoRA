@@ -17,7 +17,8 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
 
 # Datasets
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+model_name = "distilbert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 def tokenize_text(batch, truncation = True):
     return tokenizer(batch["text"], truncation=truncation, padding=True)
 
@@ -173,11 +174,11 @@ if __name__ == "__main__":
     # start a new wandb run to track this script
     wandb.init(
         # set the wandb project where this run will be logged
-        project=f"BERT-Fine-tuning",
+        project=f"Fine-tuning-{model_name}",
 
         # track hyperparameters and run metadata
         config={
-        "architecture": "DistilBERT",
+        "architecture": model_name,
         "dataset": "IMDB",
         "Alpha": round(args.alpha, 3)
         },
