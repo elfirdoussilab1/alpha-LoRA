@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from torch.optim import AdamW
 import argparse
+from utils import fix_seed
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
@@ -16,7 +17,9 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
 
 # Datasets
-model_name = "distilbert-base-uncased"
+fix_seed(123)
+#model_name = "distilbert-base-uncased"
+model_name = "roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 def tokenize_text(batch, truncation = True):
     return tokenizer(batch["text"], truncation=truncation, padding=True)
@@ -92,7 +95,7 @@ def train(model, args):
     param_groups = [{'params': lora_params, 'lr': args.lr_lora},
     {'params': alpha_params, 'lr': args.lr_alpha}]
 
-    optimizer = AdamW(param_groups)
+    optimizer = AdamW(param_groups, betas = (0.9, 0.99))
     n = len(train_loader)
     best_acc = 0
     for epoch in range(args.n_epochs):
@@ -104,7 +107,9 @@ def train(model, args):
         for i, batch in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.n_epochs}")):
             if i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
                 evals = evaluate_model(model)
-                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"], "Alpha": model.classifier.alpha.detach().cpu().numpy()}, step=epoch * n + i)
+                #new_alpha = model.classifier.alpha.detach().cpu().numpy()
+                new_alpha = model.roberta.encoder.layer[0].attention.self.query.alpha.item().detach().cpu().numpy()
+                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"], "Alpha": new_alpha}, step=epoch * n + i)
                 if evals["test_acc"] > best_acc:
                     best_acc = evals["test_acc"]
                     print("Saving new best model weights...")
@@ -151,12 +156,12 @@ if __name__ == "__main__":
     # Training arguments
     parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--lr_lora", type=float, default=1e-4, help="Learning rate for A and B")
-    parser.add_argument("--lr_alpha", type=float, default=1e-3, help="Learning rate for")
-    parser.add_argument("--inter_eval", type=int, default=100, help="Steps between intermediate evaluations")
+    parser.add_argument("--lr_alpha", type=float, default=1e-2, help="Learning rate for")
+    parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
 
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
-    parser.add_argument("--alpha", type=float, default=1, help="LoRA alpha initialization")
+    parser.add_argument("--alpha", type=float, default=None, help="LoRA alpha initialization")
     parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
 
     args = parser.parse_args()
@@ -167,7 +172,8 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Apply LoRA
-    replace_linear_with_lora(model, args.rank, args.alpha, args.alpha_r, device, train_alpha = True)
+    #replace_linear_with_lora(model, args.rank, args.alpha, args.alpha_r, device, train_alpha = True)
+    replace_lora_roberta(model, args.rank, args.alpha, args.alpha_r, device, train_alpha= True)
 
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())

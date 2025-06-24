@@ -3,6 +3,7 @@
 import torch
 import torch.nn as nn
 import math
+import numpy as np
 
 class BerTII(nn.Module):
     def __init__(self, p, vocab_size):
@@ -57,6 +58,8 @@ class LoRALinear(nn.Module):
         
         # Other parameters of lora
         self.rank = rank 
+        if alpha is None:
+            alpha = np.random.randn()
         self.alpha = nn.Parameter(torch.tensor(alpha, dtype = torch.float), requires_grad = train_alpha) # This is our alpha parameter in the theory
         self.alpha_r = alpha_r # This is the old alpha used in Pytorch
         # we can also set: self.alpha = nn.Parameter(..) if we want to make it trainable
@@ -110,3 +113,34 @@ def optimize_lora(model):
             elif 'alpha' in name:
                 alpha_params.append(param)
     return lora_params, alpha_params
+
+def replace_lora_roberta(model, rank, alpha, alpha_r, device, train_alpha=False):
+    # For Roberta-base model, we add LoRA weights only for the query and value weights
+    # Freeze all original model weights except the last classififer layer
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    # Unfreeze the classifier layer
+    for param in model.classifier.parameters():
+        param.requires_grad = True
+    # Recursive function to replace layers
+    def _replace(module):
+        for name, child in module.named_children():
+            # If the child is a Linear layer, replace it with a LoRALinear layer
+            if 'query' in name or 'value' in name:
+                if isinstance(child, nn.Linear):
+                    lora_layer = LoRALinear(
+                        child,
+                        rank,
+                        alpha=alpha,
+                        alpha_r=alpha_r,
+                        train_alpha=train_alpha
+                    ).to(device)
+                    setattr(module, name, lora_layer)
+            
+            # For all other module types, recurse
+            else:
+                _replace(child)
+
+    _replace(model)
+

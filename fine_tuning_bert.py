@@ -10,12 +10,14 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from torch.optim import AdamW
 import argparse
+from utils import fix_seed
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
 
+fix_seed(123)
 # Datasets
 model_name = "distilbert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -99,7 +101,7 @@ def train(model, args):
 
         # Use tqdm for a progress bar
         for i, batch in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.n_epochs}")):
-            if i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
+            if i % args.inter_eval == 0 or i == n: # to avoid eval at step 0
                 evals = evaluate_model(model)
                 wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"]}, step= epoch * n + i)
                 if evals["test_acc"] > best_acc:
