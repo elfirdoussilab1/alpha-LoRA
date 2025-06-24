@@ -145,8 +145,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on IMDB dataset")
 
     # Training arguments
-    parser.add_argument("--n_epochs", type=int, default=5, help="Number of training epochs")
-    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
+    parser.add_argument("--n_epochs", type=int, default=3, help="Number of training epochs")
+    parser.add_argument("--lr", type=float, default=2e-4, help="Learning rate")
     parser.add_argument("--inter_eval", type=int, default=100, help="Steps between intermediate evaluations")
 
     # LoRA parameters
