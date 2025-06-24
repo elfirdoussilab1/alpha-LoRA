@@ -98,7 +98,7 @@ def train(model, args):
 
         # Use tqdm for a progress bar
         for i, batch in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.n_epochs}")):
-            if i > 0 and i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
+            if i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
                 evals = evaluate_model(model)
                 wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"]}, step=i)
                 model.train()
@@ -139,8 +139,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on IMDB dataset")
 
     # Training arguments
-    parser.add_argument("--n_epochs", type=int, default=3, help="Number of training epochs")
-    parser.add_argument("--lr", type=float, default=1e-2, help="Learning rate")
+    parser.add_argument("--n_epochs", type=int, default=5, help="Number of training epochs")
+    parser.add_argument("--lr", type=float, default=2e-4, help="Learning rate")
     parser.add_argument("--inter_eval", type=int, default=100, help="Steps between intermediate evaluations")
 
     # LoRA parameters
