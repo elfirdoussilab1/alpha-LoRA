@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from processing.dataset_utils import IMDBDataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from models import replace_linear_with_lora
+from model import replace_linear_with_lora
 import wandb
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm

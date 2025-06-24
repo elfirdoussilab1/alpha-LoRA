@@ -1,10 +1,9 @@
 import os
 from datasets import load_dataset
-import pandas as pd
 import torch
 from processing.dataset_utils import IMDBDataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from models import replace_linear_with_lora
+from model import replace_linear_with_lora
 import wandb
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -100,7 +99,7 @@ def train(model, args):
         for i, batch in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.n_epochs}")):
             if i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
                 evals = evaluate_model(model)
-                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"]}, step=i)
+                wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"], "Alpha": model.classifier.alpha.item()}, step=i)
                 if evals["test_acc"] > best_acc:
                     best_acc = evals["test_acc"]
                     print("Saving new best model weights...")
@@ -151,7 +150,7 @@ if __name__ == "__main__":
 
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
-    parser.add_argument("--alpha", type=float, default=0.5, help="LoRA alpha initialization")
+    parser.add_argument("--alpha", type=float, default=1, help="LoRA alpha initialization")
     parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
 
     args = parser.parse_args()
@@ -189,5 +188,3 @@ if __name__ == "__main__":
 
     # Finish the W&B run
     wandb.finish()
-
-    print("End of Training.")
