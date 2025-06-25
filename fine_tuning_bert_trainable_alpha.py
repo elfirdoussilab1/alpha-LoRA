@@ -113,7 +113,7 @@ def train(model, args):
                 if evals["test_acc"] > best_acc:
                     best_acc = evals["test_acc"]
                     print("Saving new best model weights...")
-                    model_name = f'bert_sentiment_model_alpha_trainable.pth'
+                    model_name = f'{model_name}_sentiment_alpha_trainable.pth'
                     torch.save(model.state_dict(), model_name)
                     print('Model saved at: ', model_name)
                 model.train()
