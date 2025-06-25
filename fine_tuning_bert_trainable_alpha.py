@@ -113,9 +113,9 @@ def train(model, args):
                 if evals["test_acc"] > best_acc:
                     best_acc = evals["test_acc"]
                     print("Saving new best model weights...")
-                    model_name = f'{model_name}_sentiment_alpha_trainable.pth'
-                    torch.save(model.state_dict(), model_name)
-                    print('Model saved at: ', model_name)
+                    save_name = f'{model_name}_sentiment_alpha_trainable.pth'
+                    torch.save(model.state_dict(), save_name)
+                    print('Model saved at: ', save_name)
                 model.train()
 
             input_ids = batch['input_ids'].to(device)
