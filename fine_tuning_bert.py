@@ -155,14 +155,14 @@ if __name__ == "__main__":
 
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
-    parser.add_argument("--alpha", type=float, default=0.5, help="LoRA alpha (input scaling)")
+    parser.add_argument("--alpha", type=float, default=1, help="LoRA alpha (input scaling)")
     parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
 
     args = parser.parse_args()
     if args.alpha_r is None:
         args.alpha_r = args.rank
     
-    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
     model = model.to(device)
 
     # Apply LoRA
