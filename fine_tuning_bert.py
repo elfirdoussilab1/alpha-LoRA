@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 from processing.dataset_utils import IMDBDataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from model import replace_linear_with_lora
+from model import *
 import wandb
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -19,7 +19,8 @@ print("Using device: ", device)
 
 fix_seed(123)
 # Datasets
-model_name = "distilbert-base-uncased"
+#model_name = "distilbert-base-uncased"
+model_name = "roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 def tokenize_text(batch, truncation = True):
     return tokenizer(batch["text"], truncation=truncation, padding=True)
@@ -91,7 +92,7 @@ def evaluate_model(model):
     return out
 
 def train(model, args):
-    optimizer = AdamW(model.parameters(), lr=args.lr)
+    optimizer = AdamW(model.parameters(), lr=args.lr, betas = (0.9, 0.99))
     n = len(train_loader)
     best_acc = 0
     for epoch in range(args.n_epochs):
@@ -165,8 +166,8 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Apply LoRA
-    replace_linear_with_lora(model, args.rank, args.alpha, args.alpha_r, device, train_alpha = False)
-
+    #replace_linear_with_lora(model, args.rank, args.alpha, args.alpha_r, device, train_alpha = False)
+    replace_lora_roberta(model, args.rank, args.alpha, args.alpha_r, device, train_alpha= False)
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())
     lora_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
