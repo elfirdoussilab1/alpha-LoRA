@@ -1,6 +1,6 @@
 import torch
 from dataset import *
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoModelForSequenceClassification
 from model import *
 import wandb
 from torch.utils.data import DataLoader
