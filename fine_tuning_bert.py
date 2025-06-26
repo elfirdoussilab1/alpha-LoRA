@@ -177,7 +177,7 @@ if __name__ == "__main__":
     )
     
     # Start training
-    train(model, args)
+    train(model, loader, args)
     print("End of Training.")
 
     # Finish the W&B run
