@@ -144,3 +144,9 @@ def replace_lora_roberta(model, rank, alpha, alpha_r, device, train_alpha=False)
 
     _replace(model)
 
+def apply_lora(model, model_name, rank, alpha, alpha_r, device, train_alpha=False):
+    if "roberta" in model_name:
+        replace_lora_roberta(model, rank, alpha, alpha_r, device, train_alpha)
+    
+    else: # Apply LoRA to all Linear layers
+        replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha)

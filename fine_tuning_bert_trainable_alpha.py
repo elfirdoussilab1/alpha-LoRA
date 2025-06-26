@@ -1,7 +1,5 @@
-import os
-from datasets import load_dataset
 import torch
-from processing.dataset_utils import IMDBDataset
+from dataset import *
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from model import *
 import wandb
@@ -12,59 +10,39 @@ import argparse
 from utils import fix_seed
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
-
+fix_seed(123)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
 
-# Datasets
-fix_seed(123)
-#model_name = "distilbert-base-uncased"
-model_name = "roberta-base"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-def tokenize_text(batch, truncation = True):
-    return tokenizer(batch["text"], truncation=truncation, padding=True)
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on IMDB dataset")
 
-imdb_dataset = load_dataset(
-    "csv",
-    data_files={
-        "train": os.path.join("data/sentiment", "train.csv"),
-        "validation": os.path.join("data/sentiment", "val.csv"),
-        "test": os.path.join("data/sentiment", "test.csv"),
-    },
-)
+    # Training arguments
+    parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
+    parser.add_argument("--N", type=int, default=None, help="The number of training samples")
+    parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
+    parser.add_argument("--lr_lora", type=float, default=1e-4, help="Learning rate for A and B")
+    parser.add_argument("--lr_alpha", type=float, default=1e-2, help="Learning rate for alpha")
+    parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
 
-imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
-del imdb_dataset
-imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    # LoRA parameters
+    parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
+    parser.add_argument("--alpha", type=float, default=None, help="LoRA alpha initialization")
+    parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
 
-# DataLoaders
-train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
-val_dataset = IMDBDataset(imdb_tokenized, partition_key="validation")
-test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
+    args = parser.parse_args()
 
-train_loader = DataLoader(
-    dataset=train_dataset,
-    batch_size=64,
-    shuffle=True,
-    num_workers=4
-)
+    # Post-process defaults
+    if args.alpha_r is None:
+        args.alpha_r = args.rank
 
-val_loader = DataLoader(
-    dataset=val_dataset,
-    batch_size=32,
-    num_workers=2
-)
+    if args.alpha is None:
+        args.alpha = np.random.randn()
 
-test_loader = DataLoader(
-    dataset=test_dataset,
-    batch_size=32,
-    num_workers=2
-)
-loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+    return args
 
 @torch.no_grad
-def evaluate_model(model):
+def evaluate_model(model, loader):
     out = {}
     model.eval()
 
@@ -90,13 +68,19 @@ def evaluate_model(model):
         out[split + '_acc'] = total_correct / total_samples
     return out
 
-def train(model, args):
+def get_alpha(model, args):
+    if "roberta" in args.model_name:
+        return model.roberta.encoder.layer[0].attention.self.query.alpha.detach().cpu().numpy()
+    else:
+        return model.classifier.alpha.detach().cpu().numpy()
+
+def train(model, loader, args):
     lora_params, alpha_params = optimize_lora(model)
     param_groups = [{'params': lora_params, 'lr': args.lr_lora},
     {'params': alpha_params, 'lr': args.lr_alpha}]
 
     optimizer = AdamW(param_groups, betas = (0.9, 0.99))
-    n = len(train_loader)
+    n = len(loader['train'])
     best_acc = 0
     for epoch in range(args.n_epochs):
         model.train()
@@ -104,16 +88,15 @@ def train(model, args):
         total_train_correct = 0
 
         # Use tqdm for a progress bar
-        for i, batch in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.n_epochs}")):
-            if i % args.inter_eval == 0: # Check i > 0 to avoid eval at step 0
-                evals = evaluate_model(model)
-                #new_alpha = model.classifier.alpha.detach().cpu().numpy()
-                new_alpha = model.roberta.encoder.layer[0].attention.self.query.alpha.detach().cpu().numpy()
+        for i, batch in enumerate(tqdm(loader['train'], desc=f"Epoch {epoch+1}/{args.n_epochs}")):
+            if i % args.inter_eval == 0 or i == -1: 
+                evals = evaluate_model(model, loader)
+                new_alpha = get_alpha(model, args)
                 wandb.log({"Val Accuracy": evals["val_acc"], "Test Accuracy": evals["test_acc"], "Alpha": new_alpha}, step=epoch * n + i)
                 if evals["test_acc"] > best_acc:
                     best_acc = evals["test_acc"]
                     print("Saving new best model weights...")
-                    path = f'./models/{model_name}_sentiment_alpha_trainable.pth'
+                    path = f'./models/{args.model_name}_sentiment_alpha_trainable.pth'
                     torch.save(model.state_dict(), path)
                     print('Model saved at: ', path)
                 model.train()
@@ -141,57 +124,71 @@ def train(model, args):
         
         # Calculate and log epoch-level metrics
         avg_train_loss = total_train_loss / n
-        train_accuracy = total_train_correct / len(train_loader.dataset)
+        train_accuracy = total_train_correct / len(loader['train'].dataset)
         
         wandb.log({
             "Train Accuracy": train_accuracy,
-            "Train Loss (epoch)": avg_train_loss,
-            "Epoch": epoch
+            "Train Loss (epoch)": avg_train_loss
         })
         print(f'Finished Epoch {epoch+1} / {args.n_epochs}: Train Loss = {avg_train_loss:.4f}, Train Accuracy = {train_accuracy:.4f}')
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on IMDB dataset")
+    args = parse_args()
 
-    # Training arguments
-    parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
-    parser.add_argument("--lr_lora", type=float, default=1e-4, help="Learning rate for A and B")
-    parser.add_argument("--lr_alpha", type=float, default=1e-2, help="Learning rate for")
-    parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
+    # Tokenizer and datasets
+    imdb_tokenized = tokenization(args.model_name)
 
-    # LoRA parameters
-    parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
-    parser.add_argument("--alpha", type=float, default=None, help="LoRA alpha initialization")
-    parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
+    # DataLoaders
+    train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
+    if args.N is not None:
+        train_dataset = sample_n(train_dataset, args.N)
 
-    args = parser.parse_args()
-    if args.alpha_r is None:
-        args.alpha_r = args.rank
-    
-    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+    val_dataset = IMDBDataset(imdb_tokenized, partition_key="validation")
+    test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
+
+    train_loader = DataLoader(
+        dataset=train_dataset,
+        batch_size=64,
+        shuffle=True,
+        num_workers=4
+    )
+
+    val_loader = DataLoader(
+        dataset=val_dataset,
+        batch_size=32,
+        num_workers=2
+    )
+
+    test_loader = DataLoader(
+        dataset=test_dataset,
+        batch_size=32,
+        num_workers=2
+    )
+    loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+
+    model = AutoModelForSequenceClassification.from_pretrained(args.model_name, num_labels=2)
     model = model.to(device)
 
     # Apply LoRA
-    #replace_linear_with_lora(model, args.rank, args.alpha, args.alpha_r, device, train_alpha = True)
-    replace_lora_roberta(model, args.rank, args.alpha, args.alpha_r, device, train_alpha= True)
+    apply_lora(model, args.model_name, args.rank, args.alpha, args.alpha_r, device, train_alpha = True)
 
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())
     lora_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"The total number of parameters of the BERT model is : {total_params}")
+    print(f"The total number of parameters of the model is : {total_params}")
     print(f"The number of trainable parameters after applying LoRA : {lora_params}")
 
     # start a new wandb run to track this script
     wandb.init(
         # set the wandb project where this run will be logged
-        project=f"Fine-tuning-{model_name}",
+        project=f"Fine-tuning-{args.model_name}",
 
         # track hyperparameters and run metadata
         config={
-        "architecture": model_name,
+        "architecture": args.model_name,
         "dataset": "IMDB"
         },
-        name = f'alpha_trainable'
+        name = f'alpha_trainable_init_{round(args.alpha, 3)}'
     )
     
     # Start training
