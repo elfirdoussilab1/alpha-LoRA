@@ -543,9 +543,9 @@ def tokenization(model_name):
     imdb_dataset = load_dataset(
         "csv",
         data_files={
-            "train": op.join("data", "train.csv"),
-            "validation": op.join("data", "val.csv"),
-            "test": op.join("data", "test.csv"),
+            "train": op.join("data/sentiment", "train.csv"),
+            "validation": op.join("data/sentiment", "val.csv"),
+            "test": op.join("data/sentiment", "test.csv"),
         },
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
