@@ -21,7 +21,7 @@ def parse_args():
     # Training arguments
     parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
     parser.add_argument("--N", type=int, default=None, help="The number of training samples")
-    parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
+    parser.add_argument("--n_epochs", type=int, default=20, help="Number of training epochs")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
 

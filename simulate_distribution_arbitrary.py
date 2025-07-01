@@ -6,10 +6,10 @@ from rmt_results import *
 
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 
-fix_seed(1337)
+fix_seed(123)
 # Parameters
 p = 400
-n = 100
+n = 200
 gamma = 1
 
 # Arbitrary classifier
@@ -18,7 +18,7 @@ w_tilde = np.random.randn(p)
 w_tilde = w_tilde / np.linalg.norm(w_tilde) * w_norm
 
 # Arbitrary vmu_beta
-mu_beta = 1.5
+mu_beta = 1.
 vmu_beta = np.random.randn(p)
 vmu_beta = vmu_beta / np.linalg.norm(vmu_beta) * mu_beta
 
@@ -33,7 +33,6 @@ labelsize = 35
 linewidth = 3
 
 for i, alpha in enumerate(alphas):
-
     # Expectation of class C_1 and C_2
     mean_c2 = test_expectation_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma)
     mean_c1 = - mean_c2

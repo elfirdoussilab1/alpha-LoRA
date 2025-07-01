@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 from dataset import *
 
-'''
+
 # Parameters for Amazon review dataset
 N = 2000
 p = 400
@@ -13,7 +13,7 @@ n = 20
 gamma_pre = 1
 gamma_ft = 1
 batch = 10
-'''
+
 ''' Params for LLM
 N = 40000
 p = 1000
@@ -22,31 +22,21 @@ gamma_pre = 1e-1
 gamma_ft = 1e-1
 batch = 10
 '''
-# Parameters for MNIST
-N = 1000
-p = 784
-n = 10
-gamma_pre = 1e-1
-gamma_ft = 1e-1
-batch = 5
 
 # Create results in a dataframe: rows = datasets (4), columns = algorithms (3)
 #dataset_name = 'llm'
-#dataset_name = 'amazon'
-dataset_name = 'mnist'
-#data_names = ['book', 'dvd', 'elec', 'kitchen']
+dataset_name = 'amazon'
+data_names = ['book', 'dvd', 'elec', 'kitchen']
 #data_names = ['sentiment', 'safety']
-#data_source_target = list({(a, b) for a in data_names for b in data_names if a != b})
+data_source_target = [(a, b) for a in data_names for b in data_names if a != b]
 #data_source_target = [('safety', 'sentiment')]
-data_names = [f'{a}_{b}' for a in range(10) for b in range(10) if a != b]
-data_source_target = list({('6_9', b) for b in data_names})
-results = pd.DataFrame(columns=['Optimal-alpha', 'No-FT', 'std-no-ft', 'LoRA', 'std-LoRA', 'Optimal','std_optimal'])
+
+results = pd.DataFrame(columns=['beta', 'Optimal-alpha', 'No-FT', 'std-no-ft', 'LoRA', 'std-LoRA', 'Optimal','std_optimal'])
 seeds = [1, 123, 404]
 
 for source, target in data_source_target:
-    #data_type = 'amazon_' + source + '_' + target
+    data_type = 'amazon_' + source + '_' + target
     #data_type = 'llm_' + source + '_' + target
-    data_type = 'mnist_' + source + '_' + target
 
     # Datasets
     data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, source, n, target, dataset_name= dataset_name)
@@ -69,7 +59,8 @@ for source, target in data_source_target:
         # LoRA
         acc_lora.append(empirical_accuracy('ft', batch, N, n, p, mu, mu_orth, beta, 1, gamma_pre, gamma_ft, data_type))
 
-    row = {'Optimal-alpha': round(alpha_opt, 2),
+    row = {'beta': round(beta, 2),
+            'Optimal-alpha': round(alpha_opt, 2),
             'No-FT': round(np.mean(acc_noft) * 100, 2),
            'std-no-ft' : round(np.std(acc_noft) * 100, 2),
            'LoRA': round(np.mean(acc_lora) * 100, 2),

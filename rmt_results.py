@@ -170,7 +170,7 @@ def test_risk_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma):
     return expec_2 + 1 - 2 * mean
 
 # Minimum and Maximum alphas for Arbitrary classifier
-def optimal_alphas_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma):
+def optimal_alphas_arbitrary(n, p, w_tilde, vmu_beta, gamma):
     eta = p / n
     delta = Delta(eta, gamma)
     mu_beta_2 = np.sum(vmu_beta**2)

@@ -8,12 +8,12 @@ from tqdm.auto import tqdm
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})
 # Parameters
 N = 5000
-n = 40
-p = 400
-mu = 0.7
-mu_orth = 0.7
-gamma_pre = 1
-gamma_ft = 1
+n = 20
+p = 1000
+mu = 0.8
+mu_orth = 0.8
+gamma_pre = 5
+gamma_ft = 5
 
 betas = [0.2, 0.5, 0.9]
 linewidth = 4
@@ -21,6 +21,7 @@ fontsize = 40
 labelsize = 35
 s = 250
 alphas = np.linspace(-10, 10, 1000)
+#alphas = np.linspace(-5, 5, 1000)
 fig, ax = plt.subplots(1, 3, figsize = (30, 6))
 
 for i, beta in enumerate(tqdm(betas)):
@@ -39,9 +40,10 @@ for i, beta in enumerate(tqdm(betas)):
 
     ax[i].plot(alphas, accs, linewidth = linewidth, color = 'tab:blue')
     ax[i].plot([alphas[0], alphas[-1]], [acc_zero, acc_zero], linewidth = linewidth, color = 'tab:orange', linestyle = '-.')
-    ax[i].plot([alphas[0], alphas[-1]], [acc_lora, acc_lora], linewidth = linewidth, color = 'tab:purple', linestyle = '-.')
+    #ax[i].plot([alphas[0], alphas[-1]], [acc_lora, acc_lora], linewidth = linewidth, color = 'tab:purple', linestyle = '-.')
     ax[i].scatter(alpha_max, acc_max, color = 'tab:green', s = s, marker = 'D')
     ax[i].scatter(alpha_min, acc_min, color = 'tab:red', s = s, marker = 'D')
+    ax[i].scatter(1, acc_lora, color = 'tab:purple', s = s, marker = 'D')
     sentence_max = f'$\\alpha^*= {round(alpha_max, 2)}$'
     sentence_min = f'$ \\bar \\alpha= {round(alpha_min, 2)}$'
     #hx = 2e-3

@@ -31,15 +31,10 @@ from model import *
 from embedders import *
 
 type_to_path = {
-    'book' : './datasets/Amazon_review/books.mat',
-    'dvd' : './datasets/Amazon_review/dvd.mat',
-    'elec' : './datasets/Amazon_review/elec.mat',
-    'kitchen' : './datasets/Amazon_review/kitchen.mat',
-    'sentiment_train': 'sentiment_train.mat', # path not correct
-    'sentiment_test': 'sentiment_test.mat', # path not correct
-    'sentiment': 'sentiment.mat', # path not correct
-    'safety': 'safety.mat' # path not correct
-
+    'book' : './data/Amazon_review/books.mat',
+    'dvd' : './data/Amazon_review/dvd.mat',
+    'elec' : './data/Amazon_review/elec.mat',
+    'kitchen' : './data/Amazon_review/kitchen.mat'
 }
 
 # Amazon review dataset
