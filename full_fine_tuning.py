@@ -164,8 +164,7 @@ if __name__ == "__main__":
         # track hyperparameters and run metadata
         config={
         "architecture": args.model_name,
-        "dataset": "IMDB",
-        "Alpha": round(args.alpha, 3)
+        "dataset": "IMDB"
         },
         name = f'full-fine-tuning'
     )
