@@ -7,6 +7,7 @@ from tqdm.auto import tqdm
 
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})
 
+'''
 # Parameters for MNIST
 N = 2000
 n = 10
@@ -18,8 +19,19 @@ type_2 = '4_9'
 data_type = 'mnist_' + type_1 + '_' + type_2
 dataset_name = 'mnist'
 batch = 5
-
-alphas = np.linspace(-2, 2, 41)
+'''
+# Parameters
+N = 2000
+n = 40
+p = 400
+gamma_pre = 1
+gamma_ft = 1
+dataset_name = 'amazon'
+type_1 = 'book'
+type_2 = 'dvd'
+data_type = 'amazon_' + type_1 + '_' + type_2
+alphas = np.linspace(-4, 4, 81)
+batch = 10
 
 # Datasets
 data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, type_1, n, type_2, dataset_name)
@@ -31,7 +43,7 @@ accs = []
 for alpha in tqdm(alphas):
     accs.append(empirical_accuracy('ft', batch, N, n, p, mu, mu_orth, beta, alpha, gamma_pre, gamma_ft, data_type= data_type))
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize = ())
 # xmax, ymax
 #alpha_max, alpha_min = optimal_alphas(N, n, p, mu, mu_orth, beta, gamma_pre, gamma_ft)
 alpha_max = alphas[np.argmax(accs)]
@@ -41,7 +53,8 @@ acc_one = accs[np.where(alphas == 1)[0][0]]
 
 ax.plot(alphas, accs, linewidth = 2.5, color = 'tab:blue')
 ax.plot([alphas[0], alphas[-1]], [acc_zero, acc_zero], linewidth = 2.5, color = 'tab:orange', linestyle = '-.')
-ax.plot([alphas[0], alphas[-1]], [acc_one, acc_one], linewidth = 2.5, color = 'tab:purple', linestyle = '-.')
+ax.scatter(1, acc_one, color = 'tab:purple', marker= 'D')
+#ax.plot([alphas[0], alphas[-1]], [acc_one, acc_one], linewidth = 2.5, color = 'tab:purple', linestyle = '-.')
 ax.scatter(alpha_max, acc_max, color = 'tab:green', marker = 'D')
 sentence_max = f'$\\alpha^*= {round(alpha_max, 2)}$'
 #sentence_min = f'$ \\bar \\alpha= {round(alpha_min, 2)}$'

@@ -4,7 +4,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 import wandb
 from tqdm.auto import tqdm
-from models import simple_mnist
+from model import simple_mnist
 from dataset import CustomMnistDataset
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
