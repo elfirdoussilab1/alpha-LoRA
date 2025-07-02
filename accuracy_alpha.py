@@ -8,12 +8,12 @@ from tqdm.auto import tqdm
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})
 # Parameters
 N = 5000
-n = 20
+n = 40
 p = 1000
 mu = 0.8
 mu_orth = 0.8
 gamma_pre = 5
-gamma_ft = 5
+gamma_ft = 1e-1
 
 betas = [0.2, 0.5, 0.9]
 linewidth = 4

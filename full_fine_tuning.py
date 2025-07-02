@@ -26,8 +26,6 @@ def parse_args():
     parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
 
     args = parser.parse_args()
-    if args.alpha_r is None:
-        args.alpha_r = args.rank
     
     return args
 
