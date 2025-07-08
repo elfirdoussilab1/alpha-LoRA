@@ -67,8 +67,8 @@ print("Successfully created the embeddings")
 print("Computing the means")
 # Computing the means
 labels_true = np.array(train_set['label']) # list
-vmu = np.mean(labels_noisy * embeddings)
-vmu_beta = np.mean(labels_true * embeddings)
+vmu = np.mean(labels_noisy[:, np.newaxis] * embeddings, axis = 0)
+vmu_beta = np.mean(labels_true[:, np.newaxis] * embeddings, axis = 0)
 
 print(f"Shape of vmu and vmu_beta resp: {vmu.shape} and {vmu_beta.shape}")
 mu = np.linalg.norm(vmu)
