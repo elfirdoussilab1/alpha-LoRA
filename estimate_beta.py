@@ -29,7 +29,10 @@ labels_noisy = []
 
 with torch.no_grad():
     for batch in tqdm(dataloader):
-        outputs = model(batch['input_ids'], attention_mask = batch['attention_mask'], labels = batch['label'])
+        input_ids = batch['input_ids'].to(device)
+        attention_mask = batch['attention_mask'].to(device)
+        labels = batch['label'].to(device)
+        outputs = model(input_ids, attention_mask = attention_mask, labels = labels)
         logits = outputs.logits
         probs = softmax(logits, dim=-1)
         preds = torch.argmax(probs, dim=-1)
