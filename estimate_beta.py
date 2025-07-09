@@ -13,7 +13,8 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
 
 # Load the model and tokenizer
-model_name = 'roberta-base'
+#model_name = 'roberta-base'
+model_name = 'bert-base-uncased'
 model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
 model = model.to(device)
 model.eval()
@@ -72,7 +73,7 @@ vmu_beta = np.mean(labels_true[:, np.newaxis] * embeddings, axis = 0)
 
 print(f"Shape of vmu and vmu_beta resp: {vmu.shape} and {vmu_beta.shape}")
 mu = np.linalg.norm(vmu)
-mu_beta = np.linalg.norm(vmu_beta)
+#mu_beta = np.linalg.norm(vmu_beta)
 
-beta = np.sum(vmu * vmu_beta) / (mu * mu_beta)
+beta = np.sum(vmu * vmu_beta) / mu**2
 print(f"Beta is given by: {beta}")
