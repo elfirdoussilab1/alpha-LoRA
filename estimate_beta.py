@@ -105,5 +105,5 @@ print("Mean mu: ", round(mu, 3))
 mu_beta = np.linalg.norm(vmu_beta)
 print("Mean mu_beta: ", round(mu_beta, 3))
 
-beta = np.sum(vmu * vmu_beta) / (mu* mu_beta)
+beta = np.sum(vmu * vmu_beta) / mu*2
 print(f"Beta is given by: {beta}")
