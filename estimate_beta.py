@@ -62,6 +62,14 @@ with torch.no_grad():
 
 labels_noisy = np.array(labels_noisy)
 print("Computed the predictions:", labels_noisy)
+# Find the dominating label
+if np.sum(labels_noisy) > len(labels_noisy) // 2:
+    y = 1
+else:
+    y = 0
+
+
+print("The dominating label is: ", y)
 print("Now vectorizing the dataset...")
 
 # Vectorize the dataset
@@ -83,6 +91,11 @@ print("Successfully created the embeddings")
 print("Computing the means")
 # Computing the means
 labels_true = np.array(train_set['label']) # list
+
+if y == 0:
+    # Change the 0 to 1 and 1 to 0
+    labels_noisy = (labels_noisy + 1) % 2
+    labels_true = (labels_true + 1) % 2
 vmu = np.mean(labels_noisy[:, np.newaxis] * embeddings, axis = 0)
 vmu_beta = np.mean(labels_true[:, np.newaxis] * embeddings, axis = 0)
 
