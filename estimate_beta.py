@@ -101,7 +101,9 @@ vmu_beta = np.mean(labels_true[:, np.newaxis] * embeddings, axis = 0)
 
 print(f"Shape of vmu and vmu_beta resp: {vmu.shape} and {vmu_beta.shape}")
 mu = np.linalg.norm(vmu)
+print("Mean mu: ", round(mu, 3))
 mu_beta = np.linalg.norm(vmu_beta)
+print("Mean mu_beta: ", round(mu_beta, 3))
 
 beta = np.sum(vmu * vmu_beta) / (mu* mu_beta)
 print(f"Beta is given by: {beta}")
