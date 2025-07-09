@@ -20,7 +20,19 @@ model = model.to(device)
 model.eval()
 
 # Load dataset
-imdb_tokenized = tokenization(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+def tokenize_text(batch):
+    return tokenizer(batch["text"], truncation=True, padding=True)
+
+imdb_dataset = load_dataset(
+        "csv",
+        data_files={
+            "train": op.join("data/sentiment", "train.csv")
+        },
+)
+imdb_tokenized = imdb_dataset.map(tokenize_text, batched=True, batch_size=None)
+imdb_tokenized.set_format("torch", columns=["input_ids", "attention_mask", "label"])
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
 
 batch_size = 32
@@ -28,6 +40,7 @@ dataloader = DataLoader(train_dataset, batch_size=batch_size)
 
 labels_noisy = []
 
+# Compute noisy labels
 with torch.no_grad():
     for batch in tqdm(dataloader):
         input_ids = batch['input_ids'].to(device)
@@ -46,12 +59,6 @@ print("Now vectorizing the dataset...")
 # Vectorize the dataset
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 print("Loaded the sentence transformer")
-imdb_dataset = load_dataset(
-        "csv",
-        data_files={
-            "train": op.join("data/sentiment", "train.csv")
-        },
-)
 train_set = imdb_dataset['train']
 texts = train_set['text']
 
@@ -73,7 +80,7 @@ vmu_beta = np.mean(labels_true[:, np.newaxis] * embeddings, axis = 0)
 
 print(f"Shape of vmu and vmu_beta resp: {vmu.shape} and {vmu_beta.shape}")
 mu = np.linalg.norm(vmu)
-#mu_beta = np.linalg.norm(vmu_beta)
+mu_beta = np.linalg.norm(vmu_beta)
 
-beta = np.sum(vmu * vmu_beta) / mu**2
+beta = np.sum(vmu * vmu_beta) / (mu* mu_beta)
 print(f"Beta is given by: {beta}")
