@@ -8,13 +8,20 @@ from dataset import *
 from torch.utils.data import DataLoader
 from torch.nn.functional import softmax
 from sentence_transformers import SentenceTransformer
+import argparse
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Estimate the beta")
+    parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
+    args = parser.parse_args()
+    return args
+
+args = parse_args()
 # Load the model and tokenizer
-#model_name = 'roberta-base'
-model_name = 'bert-base-uncased'
+model_name = args.model_name #'bert-base-uncased'
 model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
 model = model.to(device)
 model.eval()
