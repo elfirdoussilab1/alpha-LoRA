@@ -16,6 +16,7 @@ print("Using device: ", device)
 def parse_args():
     parser = argparse.ArgumentParser(description="Estimate the beta")
     parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
+    parser.add_argument("--sentence_model", type= str, default="all-MiniLM-L6-v2", help="The embedding model")
     args = parser.parse_args()
     return args
 
@@ -64,7 +65,7 @@ print("Computed the predictions:", labels_noisy)
 print("Now vectorizing the dataset...")
 
 # Vectorize the dataset
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
+embedder = SentenceTransformer(args.sentence_model)
 print("Loaded the sentence transformer")
 train_set = imdb_dataset['train']
 texts = train_set['text']
@@ -74,7 +75,7 @@ embeddings = embedder.encode(
     batch_size=32, 
     show_progress_bar=True,
     convert_to_numpy=True,  # or convert_to_tensor=True if using PyTorch later
-    normalize_embeddings=False  # set True if using cosine similarity
+    normalize_embeddings=True  # set True if using cosine similarity
     )
 
 print("Shape of embeddings is ", embeddings.shape)
