@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
     parser.add_argument("--alpha", type=float, default=1, help="LoRA alpha (input scaling)")
     parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
+    parser.add_argument("--gamma", type=float, default=1e-2, help="Weight decay")
 
     args = parser.parse_args()
     if args.alpha_r is None:
@@ -64,7 +65,7 @@ def evaluate_model(model, loader):
     return out
 
 def train(model, loader, args):
-    optimizer = AdamW(model.parameters(), lr=args.lr, betas = (0.9, 0.99))
+    optimizer = AdamW(model.parameters(), lr=args.lr, betas = (0.9, 0.99), weight_decay= args.gamma)
     n = len(loader['train'])
     best_acc = 0
     for epoch in range(args.n_epochs):
