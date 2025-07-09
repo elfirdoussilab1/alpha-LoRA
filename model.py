@@ -150,3 +150,12 @@ def apply_lora(model, model_name, rank, alpha, alpha_r, device, train_alpha=Fals
     
     else: # Apply LoRA to all Linear layers
         replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha)
+
+
+# Changing only the alphas in the LoRALinear modules
+def change_alpha(lora_model, new_alpha):
+    for name, param in lora_model.named_parameters():
+        if 'alpha' in name:
+            param.data = torch.tensor(new_alpha, dtype=torch.float)
+            param.requires_grad = False
+    
