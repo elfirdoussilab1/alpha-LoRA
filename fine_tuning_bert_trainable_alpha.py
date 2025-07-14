@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument("--N", type=int, default=None, help="The number of training samples")
     parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--lr_lora", type=float, default=1e-4, help="Learning rate for A and B")
-    parser.add_argument("--lr_alpha", type=float, default=1e-2, help="Learning rate for alpha")
+    parser.add_argument("--lr_alpha", type=float, default=5e-3, help="Learning rate for alpha")
     parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
 
     # LoRA parameters
