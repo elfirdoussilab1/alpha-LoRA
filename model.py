@@ -50,6 +50,7 @@ class LoRALinear(nn.Module):
         self.linear = linear
         in_dim = linear.in_features
         out_dim = linear.out_features
+        self.alpha_r = alpha_r # This is the old alpha used in Pytorch
         
         # These are the LoRA parameters
         std = 1 / math.sqrt(rank)
@@ -59,14 +60,15 @@ class LoRALinear(nn.Module):
         # Other parameters of lora
         self.rank = rank 
         if alpha is None:
-            alpha = np.random.randn()
+            alpha = np.random.randn(out_dim) # shape (out_dim, )
+        else:
+            alpha = alpha * np.ones(out_dim)
         self.alpha = nn.Parameter(torch.tensor(alpha, dtype = torch.float), requires_grad = train_alpha) # This is our alpha parameter in the theory
-        self.alpha_r = alpha_r # This is the old alpha used in Pytorch
-        # we can also set: self.alpha = nn.Parameter(..) if we want to make it trainable
     
     def forward(self, x):
-        x = self.linear(self.alpha * x) +  (x @ self.lora_A @ self.lora_B) * self.alpha_r / self.rank
-        return x
+        scaled_output = self.alpha * self.linear(x) 
+        lora_update =  (x @ self.lora_A @ self.lora_B) * self.alpha_r / self.rank
+        return scaled_output + lora_update
 
 def replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha=False):
     """

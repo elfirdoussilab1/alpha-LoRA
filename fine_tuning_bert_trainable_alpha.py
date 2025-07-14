@@ -70,9 +70,9 @@ def evaluate_model(model, loader):
 
 def get_alpha(model, args):
     if "roberta" in args.model_name:
-        return model.roberta.encoder.layer[0].attention.self.query.alpha.detach().cpu().numpy()
+        return model.roberta.encoder.layer[0].attention.self.query.alpha[0].detach().cpu().numpy()
     else:
-        return model.classifier.alpha.detach().cpu().numpy()
+        return model.classifier.alpha[0].detach().cpu().numpy()
 
 def train(model, loader, args):
     lora_params, alpha_params = optimize_lora(model)
