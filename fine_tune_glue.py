@@ -1,7 +1,7 @@
 # In this file, we implement the finetuning experiments of roberta-base model on GLUE tasks: MNLI, QP and QNLI.
 import torch
 from dataset import *
-from transformers import AutoModelForSequenceClassification, get_scheduler
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_scheduler
 from model import *
 import wandb
 from torch.utils.data import DataLoader
@@ -54,7 +54,7 @@ def train(model, loader, args):
     optimizer = AdamW(param_groups, betas = (0.9, 0.99))
     n = len(loader['train'])
     best_acc = 0
-    num_training_steps = args.n_epochs * len(train_loader)
+    num_training_steps = args.n_epochs * n
     lr_scheduler = get_scheduler(
         "linear",
         optimizer=optimizer,
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(tokenized_train, shuffle=True, batch_size=args.batch_size)
     val_loader = DataLoader(tokenized_val, batch_size=args.batch_size)
     test_loader = DataLoader(tokenized_test, batch_size=args.batch_size)
-    loader = loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+    loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
 
     # Model
     num_labels = train_data.features['label'].num_classes
