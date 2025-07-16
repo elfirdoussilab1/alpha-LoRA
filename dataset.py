@@ -584,10 +584,10 @@ def get_glue_datasets(task_name: str) -> Tuple[Dataset, Dataset, Dataset]:
     # GLUE's MNLI task has unique validation and test split names
     if task_name_lower == 'mnli':
         val_key = 'validation_matched'
-        test_key = 'test_matched'
+        test_key = 'validation_mismatched'  # ✅ Use mismatched as test
     else:
         val_key = 'validation'
-        test_key = 'test'
+        test_key = 'validation'  # ✅ fallback to val for testing
         
     train_dataset = raw_datasets['train']
     validation_dataset = raw_datasets[val_key]
