@@ -25,6 +25,7 @@ from datasets import load_dataset
 from packaging import version
 from transformers import AutoTokenizer
 from tqdm import tqdm
+from typing import Tuple
 
 # Local modules
 from model import *
@@ -558,3 +559,46 @@ def sample_n(dataset, n):
     assert n <= len(dataset), "Cannot sample more than the dataset size"
     indices = random.sample(range(len(dataset)), n)
     return Subset(dataset, indices)
+
+
+def get_glue_datasets(task_name: str) -> Tuple[Dataset, Dataset, Dataset]:
+    """
+    Loads the train, validation, and test datasets for a specified GLUE task.
+
+    Args:
+        task_name (str): The name of the GLUE task (e.g., 'MNLI', 'QQP', 'QNLI').
+                         The name is case-insensitive.
+
+    Returns:
+        Tuple[Dataset, Dataset, Dataset]: A tuple containing the training,
+                                           validation, and testing datasets.
+                                           The test set for MNLI will be the 'matched' version.
+    """
+    task_name_lower = task_name.lower()
+    
+    # Load the dataset from the Hugging Face Hub
+    print(f"🔄 Loading GLUE dataset for task: {task_name_lower}...")
+    raw_datasets = load_dataset('glue', task_name_lower)
+    print("✅ Dataset loaded successfully.")
+
+    # GLUE's MNLI task has unique validation and test split names
+    if task_name_lower == 'mnli':
+        val_key = 'validation_matched'
+        test_key = 'test_matched'
+    else:
+        val_key = 'validation'
+        test_key = 'test'
+        
+    train_dataset = raw_datasets['train']
+    validation_dataset = raw_datasets[val_key]
+    
+    # The test sets on the Hub don't have labels, which is expected.
+    # They are used for submitting predictions to the official GLUE leaderboard.
+    test_dataset = raw_datasets[test_key]
+    
+    # Set the format to PyTorch tensors for seamless integration with DataLoader
+    train_dataset.set_format('torch')
+    validation_dataset.set_format('torch')
+    test_dataset.set_format('torch')
+    
+    return train_dataset, validation_dataset, test_dataset

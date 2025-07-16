@@ -1,6 +1,7 @@
+# In this file, we implement the finetuning experiments of roberta-base model on GLUE tasks: MNLI, QP and QNLI.
 import torch
 from dataset import *
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoModelForSequenceClassification, get_scheduler
 from model import *
 import wandb
 from torch.utils.data import DataLoader
@@ -10,7 +11,9 @@ import argparse
 from utils import fix_seed, evaluate_bert_accuracy
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
+
 fix_seed(123)
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
 
@@ -19,8 +22,10 @@ def parse_args():
 
     # Training arguments
     parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
+    parser.add_argument("--task_name", type=str, default=None, help="The desired dataset")
     parser.add_argument("--N", type=int, default=None, help="The number of training samples")
     parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
     parser.add_argument("--lr_lora", type=float, default=1e-4, help="Learning rate for A and B")
     parser.add_argument("--lr_alpha", type=float, default=5e-3, help="Learning rate for alpha")
     parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
@@ -49,6 +54,13 @@ def train(model, loader, args):
     optimizer = AdamW(param_groups, betas = (0.9, 0.99))
     n = len(loader['train'])
     best_acc = 0
+    num_training_steps = args.n_epochs * len(train_loader)
+    lr_scheduler = get_scheduler(
+        "linear",
+        optimizer=optimizer,
+        num_warmup_steps=0,
+        num_training_steps=num_training_steps
+    )
     for epoch in range(args.n_epochs):
         model.train()
         total_train_loss = 0
@@ -57,8 +69,8 @@ def train(model, loader, args):
         # Use tqdm for a progress bar
         for i, batch in enumerate(tqdm(loader['train'], desc=f"Epoch {epoch+1}/{args.n_epochs}")):
             if i % args.inter_eval == 0 or i == -1: 
-                test_acc = evaluate_bert_accuracy(model, test_loader, device)
-                val_acc = evaluate_bert_accuracy(model, val_loader, device)
+                test_acc = evaluate_bert_accuracy(model, loader['test'], device)
+                val_acc = evaluate_bert_accuracy(model, loader['val'], device)
                 new_alpha = get_alpha(model, args)
                 wandb.log({"Val Accuracy": val_acc, "Test Accuracy": test_acc, "Alpha": new_alpha}, step=epoch * n + i)
                 if test_acc > best_acc:
@@ -79,6 +91,7 @@ def train(model, loader, args):
             
             loss.backward()
             optimizer.step()
+            lr_scheduler.step()
 
             total_train_loss += loss.item()
             
@@ -104,37 +117,50 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Tokenizer and datasets
-    imdb_tokenized = tokenization(args.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    train_data, val_data, test_data = get_glue_datasets(args.task_name)
+    # Define the sentence keys for each GLUE task. Most have two sentences.
+    task_to_keys = {
+        "cola": ("sentence", None),
+        "mnli": ("premise", "hypothesis"),
+        "mrpc": ("sentence1", "sentence2"),
+        "qnli": ("question", "sentence"),
+        "qqp": ("question1", "question2"),
+        "rte": ("sentence1", "sentence2"),
+        "sst2": ("sentence", None),
+        "stsb": ("sentence1", "sentence2"),
+    }
+    sentence1_key, sentence2_key = task_to_keys[args.task_name.lower()]
+    def preprocess_function(examples):
+        # RoBERTa tokenizer can handle one or two sentences.
+        if sentence2_key is None:
+            return tokenizer(examples[sentence1_key], truncation=True)
+        return tokenizer(examples[sentence1_key], examples[sentence2_key], truncation=True)
 
-    # DataLoaders
-    train_dataset = IMDBDataset(imdb_tokenized, partition_key="train")
-    if args.N is not None:
-        train_dataset = sample_n(train_dataset, args.N)
+    tokenized_train = train_data.map(preprocess_function, batched=True)
+    tokenized_val = val_data.map(preprocess_function, batched=True)
+    tokenized_test = test_data.map(preprocess_function, batched=True)
 
-    val_dataset = IMDBDataset(imdb_tokenized, partition_key="validation")
-    test_dataset = IMDBDataset(imdb_tokenized, partition_key="test")
+    # Remove original text columns and set format to PyTorch tensors
+    tokenized_train = tokenized_train.remove_columns([k for k in task_to_keys[args.task_name.lower()] if k is not None] + ['idx'])
+    tokenized_val = tokenized_val.remove_columns([k for k in task_to_keys[args.task_name.lower()] if k is not None] + ['idx'])
+    tokenized_test = tokenized_test.remove_columns([k for k in task_to_keys[args.task_name.lower()] if k is not None] + ['idx'])
+    tokenized_train.set_format("torch")
+    tokenized_val.set_format("torch")
+    tokenized_test.set_format("torch")
 
-    train_loader = DataLoader(
-        dataset=train_dataset,
-        batch_size=64,
-        shuffle=True,
-        num_workers=4
+    # Create DataLoaders
+    train_loader = DataLoader(tokenized_train, shuffle=True, batch_size=args.batch_size)
+    val_loader = DataLoader(tokenized_val, batch_size=args.batch_size)
+    test_loader = DataLoader(tokenized_test, batch_size=args.batch_size)
+    loader = loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+
+    # Model
+    num_labels = train_data.features['label'].num_classes
+    model = AutoModelForSequenceClassification.from_pretrained(
+        args.model_name, 
+        num_labels=num_labels
     )
-
-    val_loader = DataLoader(
-        dataset=val_dataset,
-        batch_size=32,
-        num_workers=2
-    )
-
-    test_loader = DataLoader(
-        dataset=test_dataset,
-        batch_size=32,
-        num_workers=2
-    )
-    loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
-
-    model = AutoModelForSequenceClassification.from_pretrained(args.model_name, num_labels=2)
     model = model.to(device)
 
     # Apply LoRA
@@ -149,12 +175,13 @@ if __name__ == "__main__":
     # start a new wandb run to track this script
     wandb.init(
         # set the wandb project where this run will be logged
-        project=f"Fine-tuning-{args.model_name}-N-{args.N}",
+        project=f"Fine-tuning-{args.task_name.upper()}-{args.model_name}-N-{args.N}",
 
         # track hyperparameters and run metadata
         config={
         "architecture": args.model_name,
-        "dataset": "IMDB"
+        "dataset": args.task_name.upper(),
+        "config": vars(args)
         },
         name = f'alpha_trainable_init_{round(args.alpha, 3)}'
     )

@@ -3,6 +3,7 @@ import numpy as np
 import random
 import dataset
 import json
+import torch
 
 def fix_seed(seed):
     np.random.seed(seed)
@@ -240,3 +241,26 @@ def empirical_risk_arbitrary(batch, n, p, w_tilde, vmu_beta, alpha, gamma, data_
 # Gaussian density function
 def gaussian(x, mean, std):
     return np.exp(- (x - mean)**2 / (2 * std**2)) / (std * np.sqrt(2 * np.pi))
+
+# Evaluating BERT models
+@torch.no_grad
+def evaluate_bert_accuracy(model, loader, device = 'cuda'):
+    model.eval()
+    total_correct = 0
+    total_samples = 0
+    for batch in loader:
+        input_ids = batch['input_ids'].to(device)
+        attention_mask = batch['attention_mask'].to(device)
+        labels = batch['label'].to(device)
+
+        # Perform a forward pass
+        outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+
+        # Calculate accuracy
+        logits = outputs.logits
+        predictions = torch.argmax(logits, dim=-1)
+        total_correct += (predictions == labels).sum().item()
+        total_samples += labels.size(0) # Add the number of samples in the current batch
+    
+    # Calculate accuracy over the entire dataset
+    return total_correct / total_samples

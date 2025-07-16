@@ -160,4 +160,11 @@ def change_alpha(lora_model, new_alpha):
         if 'alpha' in name:
             param.data = torch.tensor(new_alpha, dtype=torch.float)
             param.requires_grad = False
+
+# Get the value of certain alpha
+def get_alpha(model, args):
+    if "roberta" in args.model_name:
+        return model.roberta.encoder.layer[0].attention.self.query.alpha[0].detach().cpu().numpy()
+    else:
+        return model.classifier.alpha[0].detach().cpu().numpy()
     
