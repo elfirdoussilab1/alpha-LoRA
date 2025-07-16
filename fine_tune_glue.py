@@ -132,10 +132,15 @@ if __name__ == "__main__":
     }
     sentence1_key, sentence2_key = task_to_keys[args.task_name.lower()]
     def preprocess_function(examples):
-        # RoBERTa tokenizer can handle one or two sentences.
         if sentence2_key is None:
-            return tokenizer(examples[sentence1_key], truncation=True, padding = True)
-        return tokenizer(examples[sentence1_key], examples[sentence2_key], truncation=True, padding = True)
+            return tokenizer(examples[sentence1_key],padding="max_length",truncation=True, max_length=128)
+        return tokenizer(
+            examples[sentence1_key],
+            examples[sentence2_key],
+            padding="max_length",
+            truncation=True,
+            max_length=128,
+        )
 
     tokenized_train = train_data.map(preprocess_function, batched=True)
     tokenized_val = val_data.map(preprocess_function, batched=True)
