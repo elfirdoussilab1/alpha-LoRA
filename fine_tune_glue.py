@@ -18,7 +18,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on IMDB dataset")
+    parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on GLUE task")
 
     # Training arguments
     parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
@@ -134,8 +134,8 @@ if __name__ == "__main__":
     def preprocess_function(examples):
         # RoBERTa tokenizer can handle one or two sentences.
         if sentence2_key is None:
-            return tokenizer(examples[sentence1_key], truncation=True)
-        return tokenizer(examples[sentence1_key], examples[sentence2_key], truncation=True)
+            return tokenizer(examples[sentence1_key], truncation=True, padding = True)
+        return tokenizer(examples[sentence1_key], examples[sentence2_key], truncation=True, padding = True)
 
     tokenized_train = train_data.map(preprocess_function, batched=True)
     tokenized_val = val_data.map(preprocess_function, batched=True)
