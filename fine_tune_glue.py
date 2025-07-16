@@ -76,7 +76,7 @@ def train(model, loader, args):
                 if test_acc > best_acc:
                     best_acc = test_acc
                     print("Saving new best model weights...")
-                    path = f'./models/{args.model_name}_sentiment_alpha_trainable.pth'
+                    path = f'./models/{args.model_name}_{args.task_name}_alpha_trainable.pth'
                     torch.save(model.state_dict(), path)
                     print('Model saved at: ', path)
                 model.train()
@@ -166,6 +166,7 @@ if __name__ == "__main__":
         args.model_name, 
         num_labels=num_labels
     )
+    print("Number of classes: ", num_labels)
     model = model.to(device)
 
     # Apply LoRA
