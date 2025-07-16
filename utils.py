@@ -258,6 +258,10 @@ def evaluate_bert_accuracy(model, loader, device = 'cuda'):
 
         # Calculate accuracy
         logits = outputs.logits
+        assert logits.dim() == 2, f"Logits shape should be [batch_size, num_labels], got {logits.shape}"
+        assert labels.max() < logits.shape[1], f"Label value {labels.max()} >= num_labels={logits.shape[1]}"
+        assert labels.min() >= 0, f"Label value {labels.min()} is negative"
+
         predictions = torch.argmax(logits, dim=-1)
         total_correct += (predictions == labels).sum().item()
         total_samples += labels.size(0) # Add the number of samples in the current batch
