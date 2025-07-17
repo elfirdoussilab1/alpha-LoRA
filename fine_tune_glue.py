@@ -33,7 +33,7 @@ def parse_args():
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
     parser.add_argument("--alpha", type=float, default=None, help="LoRA alpha initialization")
-    parser.add_argument("--train_alpha", type= bool, default= True, help="Making alpha trainable or not")
+    parser.add_argument("--train_alpha", type= bool, default= None, help="Making alpha trainable or not")
     parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
 
     args = parser.parse_args()
