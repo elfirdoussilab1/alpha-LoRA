@@ -33,6 +33,7 @@ def parse_args():
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
     parser.add_argument("--alpha", type=float, default=None, help="LoRA alpha initialization")
+    parser.add_argument("--train_alpha", type= bool, default= True, help="Making alpha trainable or not")
     parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
 
     args = parser.parse_args()
@@ -170,7 +171,7 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Apply LoRA
-    apply_lora(model, args.model_name, args.rank, args.alpha, args.alpha_r, device, train_alpha = True)
+    apply_lora(model, args.model_name, args.rank, args.alpha, args.alpha_r, device, train_alpha = args.train_alpha)
 
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())
@@ -189,7 +190,7 @@ if __name__ == "__main__":
         "dataset": args.task_name.upper(),
         "config": vars(args)
         },
-        name = f'alpha_trainable_init_{round(args.alpha, 3)}'
+        name = f'alpha_trainable_{args.train_alpha}_init_{round(args.alpha, 3)}'
     )
     
     # Start training
