@@ -77,7 +77,7 @@ def train(model, loader, args):
                 if test_acc > best_acc:
                     best_acc = test_acc
                     print("Saving new best model weights...")
-                    path = f'./models/{args.model_name}_{args.task_name}_alpha_trainable.pth'
+                    path = f'./models/{args.model_name}_{args.task_name}_alpha_trainable_{args.train_alpha}.pth'
                     torch.save(model.state_dict(), path)
                     print('Model saved at: ', path)
                 model.train()
