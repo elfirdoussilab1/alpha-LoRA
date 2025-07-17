@@ -12,7 +12,8 @@ from utils import fix_seed, evaluate_bert_accuracy
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
-fix_seed(123)
+seed = 123
+fix_seed(seed)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)

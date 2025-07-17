@@ -8,6 +8,7 @@ import torch
 def fix_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
+    torch.manual_seed(seed)
 
 # Data generation
 def gaussian_mixture(n, vmu, pi=0.5, cov = False):
