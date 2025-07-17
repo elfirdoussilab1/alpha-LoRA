@@ -12,12 +12,6 @@ from utils import fix_seed, evaluate_bert_accuracy
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
-seed = 123
-fix_seed(seed)
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print("Using device: ", device)
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on GLUE task")
 
@@ -30,6 +24,7 @@ def parse_args():
     parser.add_argument("--lr_lora", type=float, default=1e-4, help="Learning rate for A and B")
     parser.add_argument("--lr_alpha", type=float, default=5e-3, help="Learning rate for alpha")
     parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
+    parser.add_argument("--seed", type=int, default=123, help="Random Seed")
 
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
@@ -116,8 +111,11 @@ def train(model, loader, args):
         print(f'Finished Epoch {epoch+1} / {args.n_epochs}: Train Loss = {avg_train_loss:.4f}, Train Accuracy = {train_accuracy:.4f}')
 
 if __name__ == "__main__":
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print("Using device: ", device)
     args = parse_args()
-
+    fix_seed(args.seed)
+    
     # Tokenizer and datasets
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     train_data, val_data, test_data = get_glue_datasets(args.task_name)
@@ -191,7 +189,7 @@ if __name__ == "__main__":
         "dataset": args.task_name.upper(),
         "config": vars(args)
         },
-        name = f'alpha_trainable_{args.train_alpha}_init_{round(args.alpha, 3)}_seed_{seed}'
+        name = f'alpha_trainable_{args.train_alpha}_init_{round(args.alpha, 3)}_seed_{args.seed}'
     )
     
     # Start training
