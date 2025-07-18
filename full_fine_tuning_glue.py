@@ -171,7 +171,7 @@ if __name__ == "__main__":
         "dataset": args.task_name.upper(),
         "config": vars(args)
         },
-        name = f'full_fine_tuning_{args.seed}'
+        name = f'full_fine_tuning_seed_{args.seed}'
     )
     
     # Start training
