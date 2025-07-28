@@ -189,3 +189,19 @@ def optimal_alphas_arbitrary(n, p, w_tilde, vmu_beta, gamma):
 # Gaussian density function
 def gaussian(x, mean, std):
     return np.exp(- (x - mean)**2 / (2 * std**2)) / (std * np.sqrt(2 * np.pi))
+
+###------------------------ Regression results -----------------------
+def test_risk_regression(n, p, d, sigma, alpha, W_s, W_t, gamma):
+    # W_s and W_t of shape (d, p)
+    eta = p / n
+    delta = Delta(eta, gamma)
+    lam = 1 + gamma * (1 + delta)
+    # Now we compute the terms T_1, T_2 and T_3
+    T_1 = (lam - 1)**2 * np.trace(W_t @ W_t.T) / (lam**2 - eta) + sigma**2 * d * lam**2 / (lam**2 - eta)
+    T_2 = 2 * gamma * (1 + delta) * (1 - lam) * np.trace(W_t @ W_s.T) / (lam**2 - eta)
+    T_3 = (gamma * (1 + delta))**2 * np.trace(W_s @ W_s.T) / (lam**2 - eta)
+
+    return T_1 + alpha * T_2 + (alpha**2) * T_3
+
+def optimal_alpha_regression(W_s, W_t):
+    return 2 * np.trace(W_t @ W_s.T) / np.trace(W_s @ W_s.T)

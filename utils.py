@@ -24,6 +24,13 @@ def gaussian_mixture(n, vmu, pi=0.5, cov = False):
     X = np.outer(vmu, y) + Z # np.outer = vmu.T @ y
     return X, y
 
+def regression_data(n, p, d, W, sigma = 1):
+    X = np.random.randn(p, n)
+    Z = sigma * np.random.randn(d, n)
+    y = W @ X + Z
+    return X, y
+
+
 def generate_data(N, n, p, mu, mu_orth, beta, classifier = 'ft'):  
     """
     Function to generate Pre-training synthetic data
@@ -243,6 +250,26 @@ def empirical_risk_arbitrary(batch, n, p, w_tilde, vmu_beta, alpha, gamma, data_
 def gaussian(x, mean, std):
     return np.exp(- (x - mean)**2 / (2 * std**2)) / (std * np.sqrt(2 * np.pi))
 
+def resolvent(X, gamma):
+    p, n = X.shape
+    return np.linalg.solve(X @ X.T / n + gamma * np.eye(p), np.eye(p))
+
+def empirical_risk_regression(batch, n, p, d, sigma, alpha, W_s, W_t, gamma):
+    res = 0
+    assert W_s.shape == W_t.shape == (d, p)
+    
+    for i in range(batch):
+        X_test, y_test = regression_data(2*n, p, d, W_t, sigma)
+        Q = resolvent(X_test, gamma)
+        W_alpha = y_test @ X_test.T @ Q / n + alpha * gamma * W_s @ Q
+        y_pred = W_alpha @ X_test # shape (d, n_test)
+
+        res += np.mean(np.sum((y_pred - y_test)**2, axis = 0))
+    
+    return res / batch
+
+
+### ---------------------- LLM finetuning ----------------------
 # Evaluating BERT models
 @torch.no_grad
 def evaluate_bert_accuracy(model, loader, device = 'cuda'):
@@ -269,3 +296,4 @@ def evaluate_bert_accuracy(model, loader, device = 'cuda'):
     
     # Calculate accuracy over the entire dataset
     return total_correct / total_samples
+
