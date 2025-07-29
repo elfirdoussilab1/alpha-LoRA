@@ -13,7 +13,7 @@ from utils import fix_seed, evaluate_bert_accuracy
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on GLUE task")
+    parser = argparse.ArgumentParser(description="Train a BERT model with LoRA on GLUE task")
 
     # Training arguments
     parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")

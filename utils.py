@@ -24,7 +24,7 @@ def gaussian_mixture(n, vmu, pi=0.5, cov = False):
     X = np.outer(vmu, y) + Z # np.outer = vmu.T @ y
     return X, y
 
-def regression_data(n, p, d, W, sigma = 1):
+def regression_data(n, p, d, W, sigma):
     X = np.random.randn(p, n)
     Z = sigma * np.random.randn(d, n)
     y = W @ X + Z
@@ -252,22 +252,42 @@ def gaussian(x, mean, std):
 
 def resolvent(X, gamma):
     p, n = X.shape
-    return np.linalg.solve(X @ X.T / n + gamma * np.eye(p), np.eye(p))
+    return np.linalg.inv(X @ X.T / n + gamma * np.eye(p))
 
 def empirical_risk_regression(batch, n, p, d, sigma, alpha, W_s, W_t, gamma):
     res = 0
     assert W_s.shape == W_t.shape == (d, p)
     
     for i in range(batch):
-        X_test, y_test = regression_data(2*n, p, d, W_t, sigma)
-        Q = resolvent(X_test, gamma)
-        W_alpha = y_test @ X_test.T @ Q / n + alpha * gamma * W_s @ Q
+        X_train, y_train = regression_data(n, p, d, W_t, sigma)
+        X_test, y_test = regression_data(2 * n, p, d, W_t, sigma)
+        Q = resolvent(X_train, gamma)
+        W_alpha = y_train @ X_train.T @ Q / n + alpha * gamma * W_s @ Q
         y_pred = W_alpha @ X_test # shape (d, n_test)
 
         res += np.mean(np.sum((y_pred - y_test)**2, axis = 0))
     
     return res / batch
 
+# Generate an orthogonal matrix to A in the sense of the Frobenius dot product
+def generate_frobenius_orthogonal_matrix(A):
+    n, d = A.shape
+    A_flat = A.flatten()
+    
+    # Generate a random matrix and flatten it
+    B_flat = np.random.randn(n * d)
+    
+    # Project B_flat onto the orthogonal complement of A_flat
+    A_norm_sq = np.dot(A_flat, A_flat)
+    
+    # Avoid division by zero in case A is the zero matrix
+    if A_norm_sq == 0:
+        return B_flat.reshape(n, d)
+
+    projection = (np.dot(B_flat, A_flat) / A_norm_sq) * A_flat
+    B_orth_flat = B_flat - projection
+
+    return B_orth_flat.reshape(n, d)
 
 ### ---------------------- LLM finetuning ----------------------
 # Evaluating BERT models

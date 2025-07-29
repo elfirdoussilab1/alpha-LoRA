@@ -3,37 +3,64 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 from rmt_results import *
+from utils import *
+from matplotlib.ticker import ScalarFormatter
 
+fix_seed(123)
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 # Parameters
-N = 1000
-n = 500
+n = 20
 p = 200
-mu = 1.5
-mu_orth = 1
-alpha = 0
-beta = 0.8
-gamma_pre = 1
-classifier = 'ft'
+d = 4
+sigma = 0.5
+
+W_s = np.random.randn(d, p) 
+gamma = 1e-2
 
 batch = 10
-gammas_ft = np.logspace(-6, 3, 20)
-means_practice = []
-means_theory = []
-for gamma_ft in tqdm(gammas_ft):
-    # Theory
-    means_theory.append(test_risk(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft))
+fig, ax = plt.subplots(1, 3, figsize = (30, 6))
+linewidth = 4.5
+fontsize = 35
+labelsize = 30
+s = 200
 
-    # Empirical
-    means_practice.append(empirical_risk(classifier, batch, N, n, p, mu, mu_orth, beta, alpha, gamma_pre, gamma_ft ))
+betas = [-2, 0.5, 2]
+alphas = np.linspace(-4, 4, 20)
 
-# Plotting results
-fig, ax = plt.subplots()
-ax.semilogx(gammas_ft, means_theory, label = 'Theory', color = 'purple', linewidth = 3)
-ax.scatter(gammas_ft, means_practice, label = 'Simulation', marker = 'D', alpha = .7, color = 'green')
-ax.set_xlabel('$\gamma$')
-ax.set_ylabel('Test Risk')
-ax.grid(True)
-ax.legend()
-path = './results-plot/' + f'simulate_risk-N-{N}-n-{n}-p-{p}-alpha-{alpha}-beta-{beta}-mu-{mu}-mu_orth-{mu_orth}-gamma_pre-{gamma_pre}.pdf'
+for i, beta in enumerate(betas):
+    B = generate_frobenius_orthogonal_matrix(W_s)
+    W_t = beta * W_s + B 
+    error_practice = []
+    error_theory = []
+    alpha_opt = optimal_alpha_regression(W_s, W_t)
+
+    print(f"Optimal alpha is: {alpha_opt}")
+    for alpha in tqdm(alphas):
+        # Theory
+        error_theory.append(test_risk_regression(n, p, d, sigma, alpha, W_s, W_t, gamma))
+
+        # Empirical
+        error_practice.append(empirical_risk_regression(batch, n, p, d, sigma, alpha, W_s, W_t, gamma))
+
+    min_err = test_risk_regression(n, p, d, sigma, alpha_opt, W_s, W_t, gamma)
+    # Plotting results
+    ax[i].plot(alphas, error_theory, label = 'Theory', color = 'tab:blue', linewidth = linewidth)
+    ax[i].scatter(alphas, error_practice, label = 'Simulation', marker = 'o', alpha = .7, color = 'tab:red', s = s)
+    ax[i].scatter(alpha_opt, np.min(error_theory), marker = 'D', color = 'tab:green', s = s, label = 'Optimal $\\alpha^*$')
+    ax[i].set_title(f'$\\beta = {beta}$', fontsize = fontsize)
+    ax[i].set_xlabel('$\\alpha$', fontsize = fontsize)
+    sentence_max = f'$\\alpha^*= {round(alpha_opt, 2)}$'
+    hx = -1
+    hy = 3000
+    ax[i].text(alpha_opt+hx, min_err+hy, sentence_max, fontsize = labelsize)
+    # Format y-axis in scientific notation
+    ax[i].tick_params(axis='x', which = 'both', labelsize=labelsize)
+    ax[i].tick_params(axis='y', which = 'both', labelsize=labelsize)
+    ax[i].yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+    ax[i].ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+    ax[i].yaxis.offsetText.set_fontsize(labelsize)
+    ax[i].grid()
+ax[0].legend(fontsize = labelsize)
+ax[0].set_ylabel('Test Risk', fontsize = fontsize)
+path = './study-plot/' + f'simulate_risk_regresion-n-{n}-p-{p}-d-{d}-gamma-{gamma}-sigma-{sigma}.pdf'
 fig.savefig(path, bbox_inches='tight')

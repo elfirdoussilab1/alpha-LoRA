@@ -204,4 +204,4 @@ def test_risk_regression(n, p, d, sigma, alpha, W_s, W_t, gamma):
     return T_1 + alpha * T_2 + (alpha**2) * T_3
 
 def optimal_alpha_regression(W_s, W_t):
-    return 2 * np.trace(W_t @ W_s.T) / np.trace(W_s @ W_s.T)
+    return np.trace(W_t @ W_s.T) / np.trace(W_s @ W_s.T)
