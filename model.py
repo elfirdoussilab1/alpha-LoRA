@@ -43,34 +43,48 @@ class simple_mnist(nn.Module):
         B = logits.shape[0]
         return logits.view(B, )
 
-class LoRALinear(nn.Module):
-    def __init__(self, linear, rank, alpha, alpha_r, train_alpha = False):
+class Adapter(nn.Module):
+    def __init__(self, linear, lora= False, rank = 8, alpha = 1, alpha_r = 8, train_alpha = False):
         super().__init__()
         # These are the weights from the original pretrained model
         self.linear = linear
         in_dim = linear.in_features
         out_dim = linear.out_features
         self.alpha_r = alpha_r # This is the old alpha used in Pytorch
-        
-        # These are the LoRA parameters
-        std = 1 / math.sqrt(rank)
-        self.lora_A = nn.Parameter(torch.randn(in_dim, rank) * std, requires_grad= True)
-        self.lora_B = nn.Parameter(torch.zeros(rank, out_dim), requires_grad= True)
-        
-        # Other parameters of lora
         self.rank = rank 
+        self.lora = lora
+
+        for param in self.linear.parameters():
+            param.requires_grad = False
+        
+        # Parameter alpha
         if alpha is None:
-            alpha = np.random.randn(out_dim) # shape (out_dim, )
+            alpha_v = np.random.randn(out_dim) # shape (out_dim, )
         else:
-            alpha = alpha * np.ones(out_dim)
-        self.alpha = nn.Parameter(torch.tensor(alpha, dtype = torch.float), requires_grad = train_alpha) # This is our alpha parameter in the theory
+            alpha_v = alpha * np.ones(out_dim)
+        self.alpha = nn.Parameter(torch.tensor(alpha_v, dtype = torch.float), requires_grad = train_alpha) # This is our alpha parameter in the theory
+
+        if lora:
+            # These are the LoRA parameters
+            std = 1 / math.sqrt(rank)
+            self.lora_A = nn.Parameter(torch.randn(in_dim, rank) * std, requires_grad= True)
+            self.lora_B = nn.Parameter(torch.zeros(rank, out_dim), requires_grad= True)
+        else: # Classical Adapter
+            self.adapter = nn.Linear(in_dim, out_dim) # requires_grad is set to True here by default
+            # Initialize to zero
+            nn.init.zeros_(self.adapter.weight)
+            nn.init.zeros_(self.adapter.bias)
     
     def forward(self, x):
         scaled_output = self.alpha * self.linear(x) 
-        lora_update =  (x @ self.lora_A @ self.lora_B) * self.alpha_r / self.rank
-        return scaled_output + lora_update
+        # Adapter update
+        if self.lora:
+            update = (x @ self.lora_A @ self.lora_B) * self.alpha_r / self.rank
+        else: 
+            update = self.adapter(x)
+        return scaled_output + update
 
-def replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha=False):
+def replace_linear_with_adapter(model, lora, rank, alpha, alpha_r, device, train_alpha=False):
     """
     Replaces all nn.Linear layers in a model with LoRALinear layers,
     explicitly skipping nn.Embedding layers.
@@ -84,14 +98,15 @@ def replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha=Fa
         for name, child in module.named_children():
             # If the child is a Linear layer, replace it with a LoRALinear layer
             if isinstance(child, nn.Linear):
-                lora_layer = LoRALinear(
+                adapter_layer = Adapter(
                     child,
+                    lora, 
                     rank,
                     alpha=alpha,
                     alpha_r=alpha_r,
                     train_alpha=train_alpha
                 ).to(device)
-                setattr(module, name, lora_layer)
+                setattr(module, name, adapter_layer)
 
             # Explicitly skip embedding layers and do not recurse into them
             elif isinstance(child, nn.Embedding):
@@ -106,17 +121,17 @@ def replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha=Fa
 def optimize_lora(model):
     # The model given as input should only have lora weights trainable
     # Additionally, this method is designed for the case of alpha trainable
-    lora_params = []
+    adapter_params = []
     alpha_params = []
     for name, param in model.named_parameters():
         if param.requires_grad:
-            if 'lora_' in name:
-                lora_params.append(param)
-            elif 'alpha' in name:
+            if 'alpha' in name:
                 alpha_params.append(param)
-    return lora_params, alpha_params
+            else: # Adapter weights
+                adapter_params.append(param)
+    return adapter_params, alpha_params
 
-def replace_lora_roberta(model, rank, alpha, alpha_r, device, train_alpha=False):
+def make_adapter_roberta(model, lora, rank, alpha, alpha_r, device, train_alpha=False):
     # For Roberta-base model, we add LoRA weights only for the query and value weights
     # Freeze all original model weights except the last classififer layer
     for param in model.parameters():
@@ -131,14 +146,15 @@ def replace_lora_roberta(model, rank, alpha, alpha_r, device, train_alpha=False)
             # If the child is a Linear layer, replace it with a LoRALinear layer
             if 'query' in name or 'value' in name:
                 if isinstance(child, nn.Linear):
-                    lora_layer = LoRALinear(
+                    adapter_layer = Adapter(
                         child,
+                        lora, 
                         rank,
                         alpha=alpha,
                         alpha_r=alpha_r,
                         train_alpha=train_alpha
                     ).to(device)
-                    setattr(module, name, lora_layer)
+                    setattr(module, name, adapter_layer)
             
             # For all other module types, recurse
             else:
@@ -146,19 +162,19 @@ def replace_lora_roberta(model, rank, alpha, alpha_r, device, train_alpha=False)
 
     _replace(model)
 
-def apply_lora(model, model_name, rank, alpha, alpha_r, device, train_alpha=False):
+def apply_lora(model, model_name, lora, rank, alpha, alpha_r, device, train_alpha=False):
     if "roberta" in model_name:
-        replace_lora_roberta(model, rank, alpha, alpha_r, device, train_alpha)
+        make_adapter_roberta(model, lora, rank, alpha, alpha_r, device, train_alpha)
     
     else: # Apply LoRA to all Linear layers
-        replace_linear_with_lora(model, rank, alpha, alpha_r, device, train_alpha)
+        replace_linear_with_adapter(model, lora, rank, alpha, alpha_r, device, train_alpha)
 
 
-# Changing only the alphas in the LoRALinear modules
-def change_alpha(lora_model, new_alpha):
-    for name, param in lora_model.named_parameters():
+# Changing only the alphas in the Adapter modules
+def change_alpha(adapter_model, new_alpha):
+    for name, param in adapter_model.named_parameters():
         if 'alpha' in name:
-            param.data = torch.tensor(new_alpha, dtype=torch.float)
+            param.data = new_alpha * torch.ones_like(param.data, dtype=torch.float)
             param.requires_grad = False
 
 # Get the value of certain alpha
