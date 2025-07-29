@@ -21,7 +21,8 @@ def parse_args():
     parser.add_argument("--N", type=int, default=None, help="The number of training samples")
     parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
-    parser.add_argument("--lr_lora", type=float, default=1e-4, help="Learning rate for A and B")
+    parser.add_argument("--lora", type=lambda x: x.lower() == 'true', default=None, help="Boolean to choose if we apply LoRA version")
+    parser.add_argument("--lr_adapter", type=float, default=1e-4, help="Learning rate for the Adapter")
     parser.add_argument("--lr_alpha", type=float, default=5e-3, help="Learning rate for alpha")
     parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
     parser.add_argument("--seed", type=int, default=123, help="Random Seed")
@@ -44,8 +45,8 @@ def parse_args():
     return args
 
 def train(model, loader, args):
-    lora_params, alpha_params = optimize_lora(model)
-    param_groups = [{'params': lora_params, 'lr': args.lr_lora},
+    adapter_params, alpha_params = optimize_adapter(model)
+    param_groups = [{'params': adapter_params, 'lr': args.lr_adapter},
     {'params': alpha_params, 'lr': args.lr_alpha}]
 
     optimizer = AdamW(param_groups, betas = (0.9, 0.99))
@@ -68,7 +69,7 @@ def train(model, loader, args):
             if i % args.inter_eval == 0 or i == -1: 
                 test_acc = evaluate_bert_accuracy(model, loader['test'], device)
                 val_acc = evaluate_bert_accuracy(model, loader['val'], device)
-                new_alpha = get_alpha(model, args)
+                new_alpha = get_alpha(model, args.model_name)
                 wandb.log({"Val Accuracy": val_acc, "Test Accuracy": test_acc, "Alpha": new_alpha}, step=epoch * n + i)
                 if test_acc > best_acc:
                     best_acc = test_acc
@@ -170,7 +171,7 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Apply LoRA
-    apply_lora(model, args.model_name, args.rank, args.alpha, args.alpha_r, device, train_alpha = args.train_alpha)
+    apply_adapter(model, args.model_name, args.lora, args.rank, args.alpha, args.alpha_r, device, train_alpha = args.train_alpha)
 
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())
@@ -189,7 +190,7 @@ if __name__ == "__main__":
         "dataset": args.task_name.upper(),
         "config": vars(args)
         },
-        name = f'alpha_trainable_{args.train_alpha}_init_{round(args.alpha, 3)}_seed_{args.seed}'
+        name = f'alpha_trainable_{args.train_alpha}_lora_{args.lora}_init_{round(args.alpha, 3)}_seed_{args.seed}'
     )
     
     # Start training

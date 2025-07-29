@@ -118,7 +118,7 @@ def replace_linear_with_adapter(model, lora, rank, alpha, alpha_r, device, train
 
     _replace(model)
 
-def optimize_lora(model):
+def optimize_adapter(model):
     # The model given as input should only have lora weights trainable
     # Additionally, this method is designed for the case of alpha trainable
     adapter_params = []
@@ -162,7 +162,7 @@ def make_adapter_roberta(model, lora, rank, alpha, alpha_r, device, train_alpha=
 
     _replace(model)
 
-def apply_lora(model, model_name, lora, rank, alpha, alpha_r, device, train_alpha=False):
+def apply_adapter(model, model_name, lora, rank, alpha, alpha_r, device, train_alpha=False):
     if "roberta" in model_name:
         make_adapter_roberta(model, lora, rank, alpha, alpha_r, device, train_alpha)
     
@@ -178,8 +178,8 @@ def change_alpha(adapter_model, new_alpha):
             param.requires_grad = False
 
 # Get the value of certain alpha
-def get_alpha(model, args):
-    if "roberta" in args.model_name:
+def get_alpha(model, model_name):
+    if "roberta" in model_name:
         return model.roberta.encoder.layer[0].attention.self.query.alpha[0].detach().cpu().numpy()
     else:
         return model.classifier.alpha[0].detach().cpu().numpy()
