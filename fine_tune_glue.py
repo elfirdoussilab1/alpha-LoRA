@@ -171,8 +171,9 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Apply LoRA
-    apply_adapter(model, args.model_name, args.lora, args.rank, args.alpha, args.alpha_r, device, train_alpha = args.train_alpha)
-
+    #apply_adapter(model, args.model_name, args.lora, args.rank, args.alpha, args.alpha_r, device, train_alpha = args.train_alpha)
+    replace_linear_with_adapter(model, args.lora, args.rank, args.alpha, args.alpha_r, device, args.train_alpha)
+    
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
