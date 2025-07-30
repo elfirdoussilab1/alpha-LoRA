@@ -29,7 +29,7 @@ from typing import Tuple
 
 # Local modules
 from model import *
-from embedders import *
+from old_files.embedders import *
 
 type_to_path = {
     'book' : './data/Amazon_review/books.mat',

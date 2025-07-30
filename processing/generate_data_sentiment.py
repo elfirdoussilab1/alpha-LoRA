@@ -3,7 +3,7 @@ from datasets import load_dataset
 import torch
 import numpy as np
 import scipy.io as sio
-from embedders import *
+from old_files.embedders import *
 
 dataset_id = 'stanfordnlp/imdb'
 dataset = load_dataset(dataset_id)
