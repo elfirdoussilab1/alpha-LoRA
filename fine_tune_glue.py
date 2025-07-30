@@ -13,7 +13,7 @@ from utils import fix_seed, evaluate_bert_accuracy
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Train a DistilBERT model with LoRA on GLUE task")
+    parser = argparse.ArgumentParser(description="Fine-tune a DistilBERT model with Adapters on GLUE task")
 
     # Training arguments
     parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
@@ -175,9 +175,9 @@ if __name__ == "__main__":
 
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())
-    lora_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"The total number of parameters of the model is : {total_params}")
-    print(f"The number of trainable parameters after applying LoRA : {lora_params}")
+    print(f"The number of trainable parameters after applying Adapters : {trainable_params}")
 
     # start a new wandb run to track this script
     wandb.init(

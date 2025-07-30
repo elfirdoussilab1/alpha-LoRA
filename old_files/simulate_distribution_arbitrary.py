@@ -4,7 +4,7 @@ from utils import *
 import matplotlib.pyplot as plt
 from rmt_results import *
 
-plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
+plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})
 
 fix_seed(123)
 # Parameters
