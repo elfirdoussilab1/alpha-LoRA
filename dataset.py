@@ -561,13 +561,14 @@ def sample_n(dataset, n):
     return Subset(dataset, indices)
 
 
-def get_glue_datasets(task_name: str) -> Tuple[Dataset, Dataset, Dataset]:
+def get_glue_datasets(task_name: str, val_split_ratio: float = 0.2, seed: int = 42) -> Tuple[Dataset, Dataset, Dataset]:
     """
-    Loads the train, validation, and test datasets for a specified GLUE task.
+    Loads the train, validation (subset of train), and test datasets for a specified GLUE task.
 
     Args:
         task_name (str): The name of the GLUE task (e.g., 'MNLI', 'QQP', 'QNLI').
-                         The name is case-insensitive.
+        val_split_ratio (float): The proportion of the training set to use for validation.
+        seed (int): Random seed for reproducibility of the split.
 
     Returns:
         Tuple[Dataset, Dataset, Dataset]: A tuple containing the training,
@@ -581,24 +582,22 @@ def get_glue_datasets(task_name: str) -> Tuple[Dataset, Dataset, Dataset]:
     raw_datasets = load_dataset('glue', task_name_lower)
     print("✅ Dataset loaded successfully.")
 
-    # GLUE's MNLI task has unique validation and test split names
+    # GLUE's MNLI task has unique test split names
     if task_name_lower == 'mnli':
-        val_key = 'validation_matched'
-        test_key = 'validation_mismatched'  # ✅ Use mismatched as test
+        test_key = 'validation_mismatched'  # Use mismatched as test
     else:
-        val_key = 'validation'
-        test_key = 'validation'  # ✅ fallback to val for testing
-        
-    train_dataset = raw_datasets['train']
-    validation_dataset = raw_datasets[val_key]
+        test_key = 'validation'  # fallback to val for testing
     
-    # The test sets on the Hub don't have labels, which is expected.
-    # They are used for submitting predictions to the official GLUE leaderboard.
+    # Split train into new train and validation sets
+    split_dataset = raw_datasets['train'].train_test_split(test_size=val_split_ratio, seed=seed)
+    train_dataset = split_dataset['train']
+    validation_dataset = split_dataset['test']
+
     test_dataset = raw_datasets[test_key]
-    
-    # Set the format to PyTorch tensors for seamless integration with DataLoader
+
+    # Set the format to PyTorch tensors
     train_dataset.set_format('torch')
     validation_dataset.set_format('torch')
     test_dataset.set_format('torch')
-    
+
     return train_dataset, validation_dataset, test_dataset

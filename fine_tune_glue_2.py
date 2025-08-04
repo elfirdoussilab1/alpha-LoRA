@@ -113,7 +113,7 @@ def train(model, loader, args):
             if i % args.T == 0: # update alpha
                 optimizer_alpha.zero_grad()
                 # Sample a new batch
-                batch = next(iter(loader['train']))
+                batch = next(iter(loader['val']))
                 input_ids = batch['input_ids'].to(device)
                 attention_mask = batch['attention_mask'].to(device)
                 labels = batch['label'].to(device)
