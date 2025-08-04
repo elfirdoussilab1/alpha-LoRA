@@ -589,10 +589,14 @@ def get_glue_datasets(task_name: str, val_split_ratio: float = 0.2, seed: int = 
         test_key = 'validation'  # fallback to val for testing
     
     # Split train into new train and validation sets
-    split_dataset = raw_datasets['train'].train_test_split(test_size=val_split_ratio, seed=seed)
-    train_dataset = split_dataset['train']
-    validation_dataset = split_dataset['test']
+    if val_split_ratio > 0:
+        split_dataset = raw_datasets['train'].train_test_split(test_size=val_split_ratio, seed=seed)
+        train_dataset = split_dataset['train']
+        validation_dataset = split_dataset['test']
 
+    else:
+        train_dataset = raw_datasets['train']
+        validation_dataset = raw_datasets[test_key]
     test_dataset = raw_datasets[test_key]
 
     # Set the format to PyTorch tensors

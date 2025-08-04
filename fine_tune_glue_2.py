@@ -30,6 +30,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=123, help="Random Seed")
     parser.add_argument("--T", type=int, default=10, help="Random Seed")
     parser.add_argument("--optim_alpha", type=str, default='Adam', help="The desired optimizer for alpha")
+    parser.add_argument("--val_split", type=float, default=0.2, help="The desired validation set ratio")
 
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
@@ -46,6 +47,8 @@ def parse_args():
     if args.alpha is None:
         args.alpha = np.random.randn()
 
+    if not args.train_alpha:
+        args.val_split = 0
     return args
 
 def train(model, loader, args):
@@ -143,7 +146,7 @@ if __name__ == "__main__":
     
     # Tokenizer and datasets
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    train_data, val_data, test_data = get_glue_datasets(args.task_name)
+    train_data, val_data, test_data = get_glue_datasets(args.task_name, args.val_split)
     # Define the sentence keys for each GLUE task. Most have two sentences.
     task_to_keys = {
         "cola": ("sentence", None),
