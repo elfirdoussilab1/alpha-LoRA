@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
     parser.add_argument("--seed", type=int, default=123, help="Random Seed")
     parser.add_argument("--T", type=int, default=10, help="Random Seed")
+    parser.add_argument("--optim_alpha", type=str, default='Adam', help="The desired optimizer for alpha")
 
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
@@ -53,7 +54,10 @@ def train(model, loader, args):
     #{'params': alpha_params, 'lr': args.lr_alpha}]
 
     optimizer = AdamW(adapter_params, lr = args.lr_adapter, betas = (0.9, 0.99))
-    optimizer_alpha = Adam(alpha_params, lr = args.lr_alpha, betas = (0.9, 0.99))
+    if args.optim_alpha == 'SGD':
+        optimizer_alpha = SGD(alpha_params, lr = args.lr_alpha)
+    else: # use Adam
+        optimizer_alpha = Adam(alpha_params, lr = args.lr_alpha, betas = (0.9, 0.99))
     n = len(loader['train'])
     best_acc = 0
     num_training_steps = args.n_epochs * n
@@ -101,7 +105,7 @@ def train(model, loader, args):
             
             if i % args.T == 0:
                 optimizer_alpha.step()
-                
+
             logits = outputs.logits
             predictions = torch.argmax(logits, dim=-1)
             total_train_correct += (predictions == labels).sum().item()
