@@ -72,6 +72,8 @@ def train(model, loader, args):
         num_warmup_steps=0,
         num_training_steps=num_training_steps
     )
+    alpha_iter = iter(loader['val'])
+
     for epoch in range(args.n_epochs):
         model.train()
         total_train_loss = 0
@@ -116,7 +118,8 @@ def train(model, loader, args):
             if i % args.T == 0 and args.train_alpha == True: # update alpha
                 optimizer_alpha.zero_grad()
                 # Sample a new batch
-                batch = next(iter(loader['val']))
+                #batch = next(iter(loader['val']))
+                batch = next(alpha_iter)
                 input_ids = batch['input_ids'].to(device)
                 attention_mask = batch['attention_mask'].to(device)
                 labels = batch['label'].to(device)
