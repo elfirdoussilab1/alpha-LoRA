@@ -120,6 +120,9 @@ def train(model, loader, args):
                 # Sample a new batch
                 #batch = next(iter(loader['val']))
                 batch = next(alpha_iter)
+                if batch is None:
+                    alpha_iter = iter(loader['val'])
+                    batch = next(alpha_iter)
                 input_ids = batch['input_ids'].to(device)
                 attention_mask = batch['attention_mask'].to(device)
                 labels = batch['label'].to(device)
