@@ -31,6 +31,7 @@ def parse_args():
     parser.add_argument("--T", type=int, default=10, help="Random Seed")
     parser.add_argument("--optim_alpha", type=str, default='Adam', help="The desired optimizer for alpha")
     parser.add_argument("--val_split", type=float, default=0.2, help="The desired validation set ratio")
+    parser.add_argument("--batch_val", type=int, default=64, help="The desired validation batch size")
 
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
@@ -184,7 +185,7 @@ if __name__ == "__main__":
 
     # Create DataLoaders
     train_loader = DataLoader(tokenized_train, shuffle=True, batch_size=args.batch_size)
-    val_loader = DataLoader(tokenized_val, batch_size= 2 * args.batch_size)
+    val_loader = DataLoader(tokenized_val, batch_size= args.batch_val)
     test_loader = DataLoader(tokenized_test, batch_size=args.batch_size)
     loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
 
