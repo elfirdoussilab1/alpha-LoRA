@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
     # Create DataLoaders
     train_loader = DataLoader(tokenized_train, shuffle=True, batch_size=args.batch_size)
-    val_loader = DataLoader(tokenized_val, batch_size=args.batch_size)
+    val_loader = DataLoader(tokenized_val, batch_size= 2 * args.batch_size)
     test_loader = DataLoader(tokenized_test, batch_size=args.batch_size)
     loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
 
