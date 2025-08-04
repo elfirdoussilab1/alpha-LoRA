@@ -53,7 +53,7 @@ def train(model, loader, args):
     #{'params': alpha_params, 'lr': args.lr_alpha}]
 
     optimizer = AdamW(adapter_params, lr = args.lr_adapter, betas = (0.9, 0.99))
-    optimizer_alpha = Adam(alpha_params, lr = args.lr_alpha)
+    optimizer_alpha = Adam(alpha_params, lr = args.lr_alpha, betas = (0.9, 0.99))
     n = len(loader['train'])
     best_acc = 0
     num_training_steps = args.n_epochs * n
@@ -88,6 +88,8 @@ def train(model, loader, args):
             labels = batch['label'].to(device)
 
             optimizer.zero_grad()
+            optimizer_alpha.zero_grad()
+
             outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
             loss = outputs.loss
             
@@ -97,20 +99,23 @@ def train(model, loader, args):
 
             total_train_loss += loss.item()
             
+            if i % args.T == 0:
+                optimizer_alpha.step()
+                
             logits = outputs.logits
             predictions = torch.argmax(logits, dim=-1)
             total_train_correct += (predictions == labels).sum().item()
             
-            if i % args.T == 0: # update alpha
-                optimizer_alpha.zero_grad()
-                batch = next(iter(loader['val']))
-                input_ids = batch['input_ids'].to(device)
-                attention_mask = batch['attention_mask'].to(device)
-                labels = batch['label'].to(device)
-                outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
-                loss = outputs.loss
-                loss.backward()
-                optimizer_alpha.step()
+            # if i % args.T == 0: # update alpha
+            #     optimizer_alpha.zero_grad()
+            #     batch = next(iter(loader['train']))
+            #     input_ids = batch['input_ids'].to(device)
+            #     attention_mask = batch['attention_mask'].to(device)
+            #     labels = batch['label'].to(device)
+            #     outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+            #     loss = outputs.loss
+            #     loss.backward()
+            #     optimizer_alpha.step()
 
             # Log batch loss less frequently or not at all, to avoid noisy charts
             if i % 10 == 0:
