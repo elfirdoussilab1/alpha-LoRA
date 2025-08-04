@@ -119,8 +119,9 @@ def train(model, loader, args):
                 optimizer_alpha.zero_grad()
                 # Sample a new batch
                 #batch = next(iter(loader['val']))
-                batch = next(alpha_iter)
-                if batch is None:
+                try:
+                    batch = next(alpha_iter)
+                except StopIteration:
                     alpha_iter = iter(loader['val'])
                     batch = next(alpha_iter)
                 input_ids = batch['input_ids'].to(device)
