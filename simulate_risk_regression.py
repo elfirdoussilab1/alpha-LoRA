@@ -10,8 +10,8 @@ fix_seed(123)
 plt.rcParams.update({"text.usetex": True,"font.family": "STIXGeneral"})#,"font.sans-serif": "Helvetica",})
 # Parameters
 n = 20
-p = 200
-d = 4
+p = 40
+d = 10
 sigma = 0.5
 
 W_s = np.random.randn(d, p) 

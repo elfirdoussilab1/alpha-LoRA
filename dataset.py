@@ -19,8 +19,10 @@ from torch.utils.data import Dataset, Subset
 from torchvision.transforms import ToTensor
 from scipy.io import loadmat
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.mixture import GaussianMixture
+from sklearn.datasets import fetch_california_housing, load_diabetes
 from datasets import load_dataset
 from packaging import version
 from transformers import AutoTokenizer
@@ -606,3 +608,86 @@ def get_glue_datasets(task_name: str, val_split_ratio: float = 0.2, seed: int = 
     test_dataset.set_format('torch')
 
     return train_dataset, validation_dataset, test_dataset
+
+
+##### Linear Regression Datasets #####
+
+class LinearRegressionDatasetLoader:
+    def __init__(
+        self, dataset_name, n, p = None, d = None, sigma=0.0, whiten=False, random_state=42, project_features=False
+    ):
+        self.dataset_name = dataset_name.lower()
+        self.sigma = sigma
+        self.whiten = whiten
+        self.n = n
+        self.random_state = random_state
+        self.p = p
+        self.d = d
+        self.project_features = project_features
+
+    def get_data(self):
+        X, Y = self._load_dataset()
+        n_train = len(X)
+        # Standardize inputs
+        X = StandardScaler().fit_transform(X)
+
+        # Reduce feature dimension if needed
+        if self.p is not None:
+            pca_X = PCA(n_components=self.p, whiten=self.whiten)
+            X = pca_X.fit_transform(X)
+
+        # Standardize outputs
+        Y = StandardScaler().fit_transform(Y)
+
+        # Reduce target dimension if needed
+        if self.d is not None and Y.shape[1] > self.d:
+            pca_Y = PCA(n_components=self.d)
+            Y = pca_Y.fit_transform(Y)
+
+        # Optional Gaussian noise
+        if self.sigma > 0:
+            Y += self.sigma * np.random.randn(*Y.shape)
+
+        if self.n is None:
+            return X, Y
+        elif self.n >= n_train:
+            raise ValueError(f"Requested {self.n} training samples, but dataset only has {n_train}.")
+        return train_test_split(X, Y, train_size= self.n / n_train, random_state=self.random_state)
+
+    def _load_dataset(self):
+        if self.dataset_name == "energy":
+            return self._load_energy()
+        elif self.dataset_name == "wine":
+            return self._load_wine()
+        elif self.dataset_name == "california":
+            return self._load_california()
+        elif self.dataset_name == "diabetes":
+            return self._load_diabetes()
+        else:
+            raise ValueError(f"Unknown dataset: {self.dataset_name}")
+
+    def _load_energy(self):
+        url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00242/ENB2012_data.xlsx"
+        df = pd.read_excel(url)
+        X = df.iloc[:, :8].values
+        Y = df.iloc[:, 8:10].values  # Heating and Cooling Load
+        return X, Y
+
+    def _load_wine(self):
+        url = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv"
+        df = pd.read_csv(url, sep=";")
+        X = df.drop("quality", axis=1).values  # 11 features
+        Y = df[["quality"]].values             # 1 target (can be extended)
+        return X, Y
+
+    def _load_california(self):
+        data = fetch_california_housing()
+        X = data.data
+        Y = data.target.reshape(-1, 1)
+        return X, Y
+
+    def _load_diabetes(self):
+        data = load_diabetes()
+        X = data.data
+        Y = data.target.reshape(-1, 1)
+        return X, Y

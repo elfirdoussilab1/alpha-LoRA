@@ -269,6 +269,59 @@ def empirical_risk_regression(batch, n, p, d, sigma, alpha, W_s, W_t, gamma):
     
     return res / batch
 
+def estimate_reg_matrix(X, Y, weighting = True, num_samples = 10000):
+    # X of shape (p, n)
+    # Y of shape (d, n)
+    N = X.shape[1]
+    if weighting:
+        Q = np.linalg.inv(X @ X.T)
+        return Y @ X.T @ Q / N
+    else:
+        idx = np.random.randint(0, N, size=num_samples)
+        return Y[:,idx] @ X[:,idx].T / num_samples
+
+def estimate_alpha_reg(X, Y, X_tilde, Y_tilde, num_samples=10000, seed=42):
+    # X of shape (n, p)
+    # Y of shape (n, d)
+    n, m = len(X), len(X_tilde)
+    
+    # Sample indices for numerator
+    idx_orig = np.random.randint(0, n, size=num_samples)
+    idx_tilde_numerator = np.random.randint(0, m, size=num_samples)
+
+    x = X[idx_orig]               # (num_samples, p)
+    y = Y[idx_orig]               # (num_samples, d)
+    xt1 = X_tilde[idx_tilde_numerator]   # (num_samples, p)
+    yt1 = Y_tilde[idx_tilde_numerator]   # (num_samples, d)
+
+    # Numerator: E[yt1ᵀ y xᵀ xt1]
+    numerator = np.einsum('bi,bi,bj,bj->', yt1, y, x, xt1) / num_samples
+
+    # Sample pairs of *distinct* indices for denominator
+    idx1 = np.random.randint(0, m, size=num_samples)
+    idx2 = np.random.randint(0, m - 1, size=num_samples)
+    idx2 = np.where(idx2 >= idx1, idx2 + 1, idx2)  # ensures idx2 ≠ idx1
+
+    xt1_denom = X_tilde[idx1]
+    yt1_denom = Y_tilde[idx1]
+    xt2_denom = X_tilde[idx2]
+    yt2_denom = Y_tilde[idx2]
+
+    # Denominator: E[yt1ᵀ yt2 xt2ᵀ xt1] with i ≠ j
+    denominator = np.einsum('bi,bi,bj,bj->', yt1_denom, yt2_denom, xt2_denom, xt1_denom) / num_samples
+
+    return numerator / denominator
+
+def empirical_risk_real(X_train, Y_train, X_test, Y_test, W_s, alpha, gamma):
+    # X of shape (n, p)
+    # Y of shape (n, d)
+    n = len(X_train)
+    Q = resolvent(X_train.T, gamma)
+    W_alpha = Y_train.T @ X_train @ Q / n + alpha * gamma * W_s @ Q
+    y_pred = W_alpha @ X_test.T # shape (d, n_test)
+
+    return np.sqrt(np.mean(np.sum((y_pred - Y_test.T)**2, axis = 0)))
+
 # Generate an orthogonal matrix to A in the sense of the Frobenius dot product
 def generate_frobenius_orthogonal_matrix(A):
     n, d = A.shape
