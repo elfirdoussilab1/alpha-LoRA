@@ -61,6 +61,8 @@ def train(model, loader, args):
     if args.train_alpha == True:
         if args.optim_alpha == 'SGD':
             optimizer_alpha = SGD(alpha_params, lr = args.lr_alpha)
+        elif args.optim_alpha == 'AdamW':
+            optimizer_alpha = AdamW(alpha_params, lr = args.lr_alpha, betas = (0.9, 0.99))
         else: # use Adam
             optimizer_alpha = Adam(alpha_params, lr = args.lr_alpha, betas = (0.9, 0.99))
     n = len(loader['train'])
