@@ -118,33 +118,23 @@ def replace_linear_with_adapter(model, lora, rank, alpha, alpha_r, device, train
 
     _replace(model)
 
-def optimize_adapter(model):
-    # The model given as input should only have lora weights trainable
-    # Additionally, this method is designed for the case of alpha trainable
-    adapter_params = []
-    alpha_params = []
-    for name, param in model.named_parameters():
-        if param.requires_grad:
-            if 'alpha' in name:
-                alpha_params.append(param)
-            else: # Adapter weights
-                adapter_params.append(param)
-    return adapter_params, alpha_params
+model_to_modules = {'roberta-base': ['classifier', 'query', 'value'], 'Qwen/Qwen2.5-0.5B': ['score', 'v_proj', 'o_proj', 'up_proj']}
 
-def make_adapter_roberta(model, lora, rank, alpha, alpha_r, device, train_alpha=False):
-    # For Roberta-base model, we add LoRA weights only for the query and value weights
+def make_adapter_specific(model_name, model, lora, rank, alpha, alpha_r, device, train_alpha=False):
     # Freeze all original model weights except the last classififer layer
     for param in model.parameters():
         param.requires_grad = False
-    
     # Unfreeze the classifier layer
-    for param in model.classifier.parameters():
+    layer = getattr(model, model_to_modules[model_name][0])
+    for param in layer.parameters():
         param.requires_grad = True
+    
+    desired_modules = model_to_modules[model_name][1:]
     # Recursive function to replace layers
     def _replace(module):
         for name, child in module.named_children():
             # If the child is a Linear layer, replace it with a LoRALinear layer
-            if 'query' in name or 'value' in name:
+            if any(k in name for k in desired_modules):
                 if isinstance(child, nn.Linear):
                     adapter_layer = Adapter(
                         child,
@@ -163,12 +153,23 @@ def make_adapter_roberta(model, lora, rank, alpha, alpha_r, device, train_alpha=
     _replace(model)
 
 def apply_adapter(model, model_name, lora, rank, alpha, alpha_r, device, train_alpha=False):
-    if "roberta" in model_name:
-        make_adapter_roberta(model, lora, rank, alpha, alpha_r, device, train_alpha)
-    
+    if model_name in model_to_modules.keys():
+        make_adapter_specific(model_name, model,lora, rank, alpha, alpha_r, device, train_alpha)
     else: # Apply LoRA to all Linear layers
         replace_linear_with_adapter(model, lora, rank, alpha, alpha_r, device, train_alpha)
 
+def optimize_adapter(model):
+    # The model given as input should only have lora weights trainable
+    # Additionally, this method is designed for the case of alpha trainable
+    adapter_params = []
+    alpha_params = []
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            if 'alpha' in name:
+                alpha_params.append(param)
+            else: # Adapter weights
+                adapter_params.append(param)
+    return adapter_params, alpha_params
 
 # Changing only the alphas in the Adapter modules
 def change_alpha(adapter_model, new_alpha):

@@ -9,6 +9,7 @@ from tqdm.auto import tqdm
 from torch.optim import AdamW, Adam, SGD
 import argparse
 from utils import fix_seed, evaluate_bert_accuracy
+from huggingface_hub import login
 
 # Here we train alpha on a validation set after T steps
 
@@ -19,6 +20,7 @@ def parse_args():
 
     # Training arguments
     parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
+    # we can slso use: Qwen/Qwen2.5-0.5B or meta-llama/Llama-3.2-1B or google/gemma-2b
     parser.add_argument("--task_name", type=str, default=None, help="The desired dataset")
     parser.add_argument("--N", type=int, default=None, help="The number of training samples")
     parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
@@ -210,7 +212,6 @@ if __name__ == "__main__":
 
     # Apply LoRA
     apply_adapter(model, args.model_name, args.lora, args.rank, args.alpha, args.alpha_r, device, train_alpha = args.train_alpha)
-    #replace_linear_with_adapter(model, args.lora, args.rank, args.alpha, args.alpha_r, device, args.train_alpha)
 
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())
