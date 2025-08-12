@@ -166,18 +166,19 @@ if __name__ == "__main__":
         "qqp": ("question1", "question2"),
         "rte": ("sentence1", "sentence2"),
         "sst2": ("sentence", None),
-        "stsb": ("sentence1", "sentence2"),
+        "wnli": ("sentence1", "sentence2")
     }
     sentence1_key, sentence2_key = task_to_keys[args.task_name.lower()]
     def preprocess_function(examples):
+        max_length = 512 if args.task_name.lower() in ["mnli", "qnli"] else 128
         if sentence2_key is None:
-            return tokenizer(examples[sentence1_key],padding="max_length",truncation=True, max_length=128)
+            return tokenizer(examples[sentence1_key],padding="max_length",truncation=True, max_length=max_length)
         return tokenizer(
             examples[sentence1_key],
             examples[sentence2_key],
             padding="max_length",
             truncation=True,
-            max_length=128,
+            max_length=max_length,
         )
 
     tokenized_train = train_data.map(preprocess_function, batched=True)
