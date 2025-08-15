@@ -219,10 +219,16 @@ if __name__ == "__main__":
     print(f"The total number of parameters of the model is : {total_params}")
     print(f"The number of trainable parameters after applying Adapters : {trainable_params}")
 
+    name_model_run = args.model_name
+    if 'Qwen' in name_model_run:
+        name_model_run = 'qwen'
+    elif 'gemma' in name_model_run:
+        name_model_run = 'gemma'
+
     # start a new wandb run to track this script
     wandb.init(
         # set the wandb project where this run will be logged
-        project=f"Fine-tuning-{args.task_name.upper()}-{args.model_name}-N-{args.N}",
+        project=f"Fine-tuning-{args.task_name.upper()}-{name_model_run}-N-{args.N}",
 
         # track hyperparameters and run metadata
         config={
