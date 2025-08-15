@@ -6,9 +6,12 @@ from model import *
 import wandb
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
-from torch.optim import AdamW
+from torch.optim import AdamW, Adam, SGD
 import argparse
 from utils import fix_seed, evaluate_bert_accuracy
+from huggingface_hub import login
+
+# Here we train alpha on a validation set after T steps
 
 wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
 
@@ -17,6 +20,7 @@ def parse_args():
 
     # Training arguments
     parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
+    # we can slso use: Qwen/Qwen2.5-0.5B or google/gemma-3-270m or meta-llama/Llama-3.2-1B
     parser.add_argument("--task_name", type=str, default=None, help="The desired dataset")
     parser.add_argument("--N", type=int, default=None, help="The number of training samples")
     parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
@@ -26,6 +30,10 @@ def parse_args():
     parser.add_argument("--lr_alpha", type=float, default=5e-3, help="Learning rate for alpha")
     parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
     parser.add_argument("--seed", type=int, default=123, help="Random Seed")
+    parser.add_argument("--T", type=int, default=10, help="Random Seed")
+    parser.add_argument("--optim_alpha", type=str, default='Adam', help="The desired optimizer for alpha")
+    parser.add_argument("--val_split", type=float, default=0.2, help="The desired validation set ratio")
+    parser.add_argument("--batch_val", type=int, default=64, help="The desired validation batch size")
 
     # LoRA parameters
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
@@ -42,14 +50,23 @@ def parse_args():
     if args.alpha is None:
         args.alpha = np.random.randn()
 
+    if not args.train_alpha:
+        args.val_split = 0
     return args
 
 def train(model, loader, args):
     adapter_params, alpha_params = optimize_adapter(model)
-    param_groups = [{'params': adapter_params, 'lr': args.lr_adapter},
-    {'params': alpha_params, 'lr': args.lr_alpha}]
+    #param_groups = [{'params': adapter_params, 'lr': args.lr_adapter},
+    #{'params': alpha_params, 'lr': args.lr_alpha}]
 
-    optimizer = AdamW(param_groups, betas = (0.9, 0.99))
+    optimizer = AdamW(adapter_params, lr = args.lr_adapter, betas = (0.9, 0.99))
+    if args.train_alpha == True:
+        if args.optim_alpha == 'SGD':
+            optimizer_alpha = SGD(alpha_params, lr = args.lr_alpha)
+        elif args.optim_alpha == 'AdamW':
+            optimizer_alpha = AdamW(alpha_params, lr = args.lr_alpha, betas = (0.9, 0.99))
+        else: # use Adam
+            optimizer_alpha = Adam(alpha_params, lr = args.lr_alpha, betas = (0.9, 0.99))
     n = len(loader['train'])
     best_acc = 0
     num_training_steps = args.n_epochs * n
@@ -59,6 +76,8 @@ def train(model, loader, args):
         num_warmup_steps=0,
         num_training_steps=num_training_steps
     )
+    alpha_iter = iter(loader['val'])
+
     for epoch in range(args.n_epochs):
         model.train()
         total_train_loss = 0
@@ -93,14 +112,34 @@ def train(model, loader, args):
 
             total_train_loss += loss.item()
             
+            # if i % args.T == 0:
+            #     optimizer_alpha.step()
+
             logits = outputs.logits
             predictions = torch.argmax(logits, dim=-1)
             total_train_correct += (predictions == labels).sum().item()
             
+            if i % args.T == 0 and args.train_alpha == True: # update alpha
+                optimizer_alpha.zero_grad()
+                # Sample a new batch
+                #batch = next(iter(loader['val']))
+                try:
+                    batch = next(alpha_iter)
+                except StopIteration:
+                    alpha_iter = iter(loader['val'])
+                    batch = next(alpha_iter)
+                input_ids = batch['input_ids'].to(device)
+                attention_mask = batch['attention_mask'].to(device)
+                labels = batch['label'].to(device)
+                outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+                loss = outputs.loss
+                loss.backward()
+                optimizer_alpha.step()
+
             # Log batch loss less frequently or not at all, to avoid noisy charts
             if i % 10 == 0:
-                 wandb.log({"Train Loss (batch)": loss.item()})
-        
+                wandb.log({"Train Loss (batch)": loss.item()})
+
         # Calculate and log epoch-level metrics
         avg_train_loss = total_train_loss / n
         train_accuracy = total_train_correct / len(loader['train'].dataset)
@@ -119,7 +158,7 @@ if __name__ == "__main__":
     
     # Tokenizer and datasets
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    train_data, val_data, test_data = get_glue_datasets(args.task_name)
+    train_data, val_data, test_data = get_glue_datasets(args.task_name, args.val_split)
     # Define the sentence keys for each GLUE task. Most have two sentences.
     task_to_keys = {
         "cola": ("sentence", None),
@@ -129,18 +168,19 @@ if __name__ == "__main__":
         "qqp": ("question1", "question2"),
         "rte": ("sentence1", "sentence2"),
         "sst2": ("sentence", None),
-        "stsb": ("sentence1", "sentence2"),
+        "wnli": ("sentence1", "sentence2")
     }
     sentence1_key, sentence2_key = task_to_keys[args.task_name.lower()]
     def preprocess_function(examples):
+        max_length = 512 if args.task_name.lower() in ["mnli", "qnli"] else 128
         if sentence2_key is None:
-            return tokenizer(examples[sentence1_key],padding="max_length",truncation=True, max_length=128)
+            return tokenizer(examples[sentence1_key],padding="max_length",truncation=True, max_length=max_length)
         return tokenizer(
             examples[sentence1_key],
             examples[sentence2_key],
             padding="max_length",
             truncation=True,
-            max_length=128,
+            max_length=max_length,
         )
 
     tokenized_train = train_data.map(preprocess_function, batched=True)
@@ -157,7 +197,7 @@ if __name__ == "__main__":
 
     # Create DataLoaders
     train_loader = DataLoader(tokenized_train, shuffle=True, batch_size=args.batch_size)
-    val_loader = DataLoader(tokenized_val, batch_size=args.batch_size)
+    val_loader = DataLoader(tokenized_val, batch_size= args.batch_val)
     test_loader = DataLoader(tokenized_test, batch_size=args.batch_size)
     loader = {'train': train_loader, 'val': val_loader, 'test': test_loader}
 
@@ -172,7 +212,6 @@ if __name__ == "__main__":
 
     # Apply LoRA
     apply_adapter(model, args.model_name, args.lora, args.rank, args.alpha, args.alpha_r, device, train_alpha = args.train_alpha)
-    #replace_linear_with_adapter(model, args.lora, args.rank, args.alpha, args.alpha_r, device, args.train_alpha)
 
     # Print param counts
     total_params = sum(p.numel() for p in model.parameters())

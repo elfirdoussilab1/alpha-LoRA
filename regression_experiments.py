@@ -27,8 +27,8 @@ d = 1
 # The purpose of this file is to make a table of results just like the Amazon review experiments.
 # We want to make plots about the test risk evolution with alpha, and hopefully see that our estimated alpha^* is the optimal. 
 # If we get this, we finish the experiments about this part.
-#data_names = ['energy', 'wine', 'california', 'diabetes']
-data_names = ['energy', 'california', 'diabetes']
+data_names = ['energy', 'wine', 'california', 'diabetes']
+#data_names = ['energy', 'california', 'diabetes']
 data_source_target = [(a, b) for a in data_names for b in data_names if a != b]
 results = pd.DataFrame(columns=['Optimal-alpha', 'No-FT', 'std-no-ft', 'LoRA', 'std-LoRA', 'Optimal','std_optimal'])
 
