@@ -26,6 +26,7 @@ def parse_args():
 
 if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print("Using device: ", device)
     args = parse_args()
 
     # Load the test dataset
@@ -68,7 +69,7 @@ if __name__ == "__main__":
     model = AutoModelForSequenceClassification.from_pretrained(
             args.model_name, 
             num_labels=num_labels
-        )
+        ).to(device)
     # Apply LoRA
     apply_adapter(model, args.model_name, lora = True, rank = args.rank, alpha= 1, alpha_r= args.rank, device =device, train_alpha = True)
     model.load_state_dict(torch.load(f'models/{args.model_name}_{args.task_name}_alpha_trainable_True.pth'))
@@ -89,8 +90,8 @@ if __name__ == "__main__":
         new_model = add_to_alpha(model, c)
         new_model.to(device)
         # Evaluate this model
-        test_acc = evaluate_bert_accuracy(model, test_loader, device)
+        test_acc = evaluate_bert_accuracy(new_model, test_loader, device)
         accs.append(test_acc)
-    
+
     # Save the accuracies list to npy object
     np.save("accs_alpha.npy", np.array(accs))
