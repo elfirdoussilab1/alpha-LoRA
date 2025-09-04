@@ -87,10 +87,10 @@ if __name__ == "__main__":
     for c in tqdm(constants):
         # clone the model and add the constant to each parameter alpha
         new_model = add_to_alpha(model, c)
-
+        new_model.to(device)
         # Evaluate this model
         test_acc = evaluate_bert_accuracy(model, test_loader, device)
         accs.append(test_acc)
-
+    
     # Save the accuracies list to npy object
-    np.save("accs_alpha.npy", accs)
+    np.save("accs_alpha.npy", np.array(accs))
