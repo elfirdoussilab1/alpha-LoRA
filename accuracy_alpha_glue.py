@@ -71,11 +71,8 @@ if __name__ == "__main__":
         )
     # Apply LoRA
     apply_adapter(model, args.model_name, lora = True, rank = args.rank, alpha= 1, alpha_r= args.rank, device =device, train_alpha = False)
-    model.load_state_dict(f'models/{args.model_name}_{args.task_name}_alpha_trainable_True.pth')
-
-    # Freeze the model
-    for param in model.parameters():
-        param.requires_grad = False
+    model.load_state_dict(torch.load(f'models/{args.model_name}_{args.task_name}_alpha_trainable_True.pth'))
+    model.eval()
 
     # Evaluation part
     constants = np.linspace(-2, 2, 50)
