@@ -77,13 +77,15 @@ if __name__ == "__main__":
 
     # Evaluation part
     constants = np.linspace(-2, 2, 50)
+    #constants = np.linspace(-, 2, 50)
     accs = []
     def add_to_alpha(model, const):
         new_model = deepcopy(model)
         for name, param in new_model.named_parameters():
             if 'alpha' in name:
                 with torch.no_grad():  # avoid tracking in autograd
-                    param.add_(const)  # in-place addition
+                    #param.add_(const)  # in-place addition
+                    param.mul_(const)  # in-place multiplication
         return new_model
 
     for c in tqdm(constants):
