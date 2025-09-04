@@ -82,7 +82,8 @@ if __name__ == "__main__":
         new_model = deepcopy(model)
         for name, param in new_model.named_parameters():
             if 'alpha' in name:
-                param = param + const
+                with torch.no_grad():  # avoid tracking in autograd
+                    param.add_(const)  # in-place addition
         return new_model
 
     for c in tqdm(constants):
