@@ -70,7 +70,7 @@ if __name__ == "__main__":
             num_labels=num_labels
         )
     # Apply LoRA
-    apply_adapter(model, args.model_name, lora = True, rank = args.rank, alpha= 1, alpha_r= args.rank, device =device, train_alpha = False)
+    apply_adapter(model, args.model_name, lora = True, rank = args.rank, alpha= 1, alpha_r= args.rank, device =device, train_alpha = True)
     model.load_state_dict(torch.load(f'models/{args.model_name}_{args.task_name}_alpha_trainable_True.pth'))
     model.eval()
 
