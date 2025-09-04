@@ -92,6 +92,6 @@ if __name__ == "__main__":
         # Evaluate this model
         test_acc = evaluate_bert_accuracy(new_model, test_loader, device)
         accs.append(test_acc)
-
+    print(accs)
     # Save the accuracies list to npy object
     np.save("accs_alpha.npy", np.array(accs))
