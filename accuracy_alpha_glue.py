@@ -76,8 +76,8 @@ if __name__ == "__main__":
     model.eval()
 
     # Evaluation part
-    A = np.linspace(-2, 2, 50)
-    B = np.linspace(-2, 2, 50)
+    A = np.linspace(-2, 2, 49)
+    B = np.linspace(-2, 2, 49)
     accs = np.zeros((len(A), len(B)))
 
     def add_to_alpha(model, a, b):
