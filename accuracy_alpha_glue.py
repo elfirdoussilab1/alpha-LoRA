@@ -76,25 +76,28 @@ if __name__ == "__main__":
     model.eval()
 
     # Evaluation part
-    constants = np.linspace(-2, 2, 50)
-    #constants = np.linspace(-, 2, 50)
-    accs = []
-    def add_to_alpha(model, const):
+    A = np.linspace(-1, 1, 50)
+    B = np.linspace(-2, 2, 50)
+    accs = np.zeros((len(A), len(B)))
+
+    def add_to_alpha(model, a, b):
         new_model = deepcopy(model)
         for name, param in new_model.named_parameters():
             if 'alpha' in name:
-                with torch.no_grad():  # avoid tracking in autograd
-                    #param.add_(const)  # in-place addition
-                    param.mul_(const)  # in-place multiplication
+                with torch.no_grad():  # avoid tracking in autograd 
+                    # in-place multiplication and addition
+                    param.mul_(a) 
+                    param.add_(b)
         return new_model
 
-    for c in tqdm(constants):
-        # clone the model and add the constant to each parameter alpha
-        new_model = add_to_alpha(model, c)
-        new_model.to(device)
-        # Evaluate this model
-        test_acc = evaluate_bert_accuracy(new_model, test_loader, device)
-        accs.append(test_acc)
+    for i, a in tqdm(enumerate(A)):
+        for j, b in tqdm(enumerate(B)):
+            # clone the model and add the constant to each parameter alpha
+            new_model = add_to_alpha(model, a, b)
+            new_model.to(device)
+            # Evaluate this model
+            test_acc = evaluate_bert_accuracy(new_model, test_loader, device)
+            accs[i, j] = test_acc
     print(accs)
     # Save the accuracies list to npy object
     np.save("accs_alpha.npy", np.array(accs))
