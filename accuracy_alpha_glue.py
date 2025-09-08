@@ -76,7 +76,7 @@ if __name__ == "__main__":
     model.eval()
 
     # Evaluation part
-    A = np.linspace(-1, 1, 50)
+    A = np.linspace(-2, 2, 50)
     B = np.linspace(-2, 2, 50)
     accs = np.zeros((len(A), len(B)))
 
