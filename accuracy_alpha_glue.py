@@ -91,7 +91,7 @@ if __name__ == "__main__":
         return new_model
 
     for i, a in enumerate(tqdm(A)):
-        for j, b in enumerate(tqdm(B)):
+        for j, b in enumerate(B):
             # clone the model and add the constant to each parameter alpha
             new_model = add_to_alpha(model, a, b)
             new_model.to(device)
