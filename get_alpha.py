@@ -21,7 +21,7 @@ model.load_state_dict(torch.load(f'models/{model_name}_{task_name}_alpha_trainab
 alpha_params = []
 for name, param in model.named_parameters():
     if 'alpha' in name:
-        alpha_params = alpha_params + list(param.view(-1))
+        alpha_params = alpha_params + list(param.view(-1).detach().cpu().numpy())
 alpha_params = np.array(alpha_params)
 
 # Save vector
