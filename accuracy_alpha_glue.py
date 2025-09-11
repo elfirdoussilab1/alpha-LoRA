@@ -17,7 +17,7 @@ def parse_args():
     # Training arguments
     parser.add_argument("--model_name", type=str, default="roberta-base", help="The finetuned model")
     # we can slso use: Qwen/Qwen2.5-0.5B or google/gemma-3-270m or meta-llama/Llama-3.2-1B
-    parser.add_argument("--task_name", type=str, default=None, help="The desired dataset")
+    parser.add_argument("--task_name", type=str, default='rte', help="The desired dataset")
     parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
     parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
 
