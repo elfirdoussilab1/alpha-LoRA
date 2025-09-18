@@ -25,21 +25,21 @@ def parse_args():
     parser.add_argument("--N", type=int, default=None, help="The number of training samples")
     parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
+    parser.add_argument("--alpha", type=float, default=None, help="Alpha scaling initialization")
     parser.add_argument("--lora", type=lambda x: x.lower() == 'true', default=None, help="Boolean to choose if we apply LoRA version")
-    parser.add_argument("--lr_adapter", type=float, default=1e-4, help="Learning rate for the Adapter")
     parser.add_argument("--lr_alpha", type=float, default=5e-3, help="Learning rate for alpha")
+    parser.add_argument("--train_alpha", type=lambda x: x.lower() == 'true', default=None, help="Make alpha trainable or not (True/False)")
     parser.add_argument("--inter_eval", type=int, default=200, help="Steps between intermediate evaluations")
     parser.add_argument("--seed", type=int, default=123, help="Random Seed")
     parser.add_argument("--T", type=int, default=10, help="Random Seed")
     parser.add_argument("--optim_alpha", type=str, default='Adam', help="The desired optimizer for alpha")
     parser.add_argument("--val_split", type=float, default=0.2, help="The desired validation set ratio")
-    parser.add_argument("--batch_val", type=int, default=64, help="The desired validation batch size")
+    parser.add_argument("--batch_alpha", type=int, default=64, help="The desired validation batch size for training alpha")
 
     # LoRA parameters
-    parser.add_argument("--rank", type=int, default=8, help="LoRA rank")
-    parser.add_argument("--alpha", type=float, default=None, help="LoRA alpha initialization")
-    parser.add_argument("--train_alpha", type=lambda x: x.lower() == 'true', default=None, help="Make alpha trainable or not (True/False)")
-    parser.add_argument("--alpha_r", type=float, default=None, help="LoRA output scaling (defaults to rank)")
+    parser.add_argument("--lora_r", type=int, default=8, help="LoRA rank")
+    parser.add_argument("--lora_alpha", type=float, default=None, help="LoRA output scaling (defaults to rank)")
+    parser.add_argument("--lr_adapter", type=float, default=1e-4, help="Learning rate for the Adapter")
 
     args = parser.parse_args()
 
