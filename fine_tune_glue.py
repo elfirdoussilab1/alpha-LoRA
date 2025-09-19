@@ -44,8 +44,8 @@ def parse_args():
     args = parser.parse_args()
 
     # Post-process defaults
-    if args.alpha_r is None:
-        args.alpha_r = args.rank
+    if args.lora_alpha is None:
+        args.lora_alpha = args.lora_r
 
     if args.alpha is None:
         args.alpha = np.random.randn()
