@@ -19,7 +19,7 @@ data_source_target = [('dvd', 'book'), ('book', 'kitchen'), ('kitchen', 'elec')]
 alphas = np.linspace(-4, 4, 81)
 batch = 10
 
-fig, ax = plt.subplots(1, 3, figsize = (30, 6))
+fig, ax = plt.subplots(1, 3, figsize = (30, 5))
 linewidth = 4.5
 fontsize = 40
 labelsize = 35

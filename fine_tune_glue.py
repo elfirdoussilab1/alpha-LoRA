@@ -228,7 +228,7 @@ if __name__ == "__main__":
     # start a new wandb run to track this script
     wandb.init(
         # set the wandb project where this run will be logged
-        project=f"Fine-tuning-{args.task_name.upper()}-{name_model_run}-N-{args.N}",
+        project=f"Fine-tuning-{args.task_name.upper()}-{name_model_run}-lora-{args.lora}",
 
         # track hyperparameters and run metadata
         config={
