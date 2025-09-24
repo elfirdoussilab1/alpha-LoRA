@@ -150,9 +150,9 @@ def train(model, loader, args):
             "Train Loss (epoch)": avg_train_loss
         })
         print(f'Finished Epoch {epoch+1} / {args.n_epochs}: Train Loss = {avg_train_loss:.4f}, Train Accuracy = {train_accuracy:.4f}')
-        runtime = time.time() - start_time
-        wandb.log({"Training Runtime (s)": runtime})
-        print(f"Training finished in {runtime/60:.2f} minutes")
+    runtime = time.time() - start_time
+    wandb.log({"Training Runtime (s)": runtime})
+    print(f"Training finished in {runtime/60:.2f} minutes")
 
 if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
