@@ -25,6 +25,6 @@ for name, param in model.named_parameters():
 alpha_params = np.array(alpha_params)
 
 # Save vector
-np.save('alpha_vec.npy', alpha_params)
+np.save(f'alpha_vec_{task_name}.npy', alpha_params)
 
     
