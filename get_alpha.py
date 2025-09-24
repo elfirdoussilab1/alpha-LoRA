@@ -6,13 +6,13 @@ from model import *
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 model_name = 'roberta-base'
-task_name = 'mnli'
+task_name = 'qnli'
 rank = 8
 
 # Load the model
 model = AutoModelForSequenceClassification.from_pretrained(
         model_name, 
-        num_labels=3 # 2 for RTE
+        num_labels=2 # 2 for RTE and 3 for MNLI
     ).to(device)
 # Apply LoRA
 apply_adapter(model, model_name, lora = True, rank = rank, alpha= 1, alpha_r= rank, device =device, train_alpha = True)
