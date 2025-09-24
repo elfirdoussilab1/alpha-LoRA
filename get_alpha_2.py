@@ -4,7 +4,7 @@ import numpy as np
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model_name = 'roberta-base'
-task_name = 'qnli'
+task_name = 'mnli'
 
 path = f'models/{model_name}_{task_name}_alpha_trainable_True.pth'
 # Load checkpoint
