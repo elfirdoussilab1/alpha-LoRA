@@ -6,7 +6,7 @@ from model import *
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 model_name = 'roberta-base'
-task_name = 'rte'
+task_name = 'mnli'
 rank = 8
 
 # Load the model
