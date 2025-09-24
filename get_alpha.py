@@ -12,7 +12,7 @@ rank = 8
 # Load the model
 model = AutoModelForSequenceClassification.from_pretrained(
         model_name, 
-        num_labels=2
+        num_labels=3 # 2 for RTE
     ).to(device)
 # Apply LoRA
 apply_adapter(model, model_name, lora = True, rank = rank, alpha= 1, alpha_r= rank, device =device, train_alpha = True)
