@@ -1,30 +1,24 @@
-import numpy as np
 import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-from model import *
+import numpy as np
+
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
 model_name = 'roberta-base'
-task_name = 'qnli'
-rank = 8
+task_name = 'mnli'
 
-# Load the model
-model = AutoModelForSequenceClassification.from_pretrained(
-        model_name, 
-        num_labels=2 # 2 for RTE and 3 for MNLI
-    ).to(device)
-# Apply LoRA
-apply_adapter(model, model_name, lora = True, rank = rank, alpha= 1, alpha_r= rank, device =device, train_alpha = True)
-model.load_state_dict(torch.load(f'models/{model_name}_{task_name}_alpha_trainable_True.pth'))
+path = f'models/{model_name}_{task_name}_alpha_trainable_True.pth'
+# Load checkpoint
+checkpoint = torch.load(path, map_location= device)
 
+# Depending on how it was saved:
+state_dict = checkpoint["state_dict"] if "state_dict" in checkpoint else checkpoint
+
+# Collect all 'alpha' params
 alpha_params = []
-for name, param in model.named_parameters():
+for name, param in state_dict.items():
     if 'alpha' in name:
         alpha_params = alpha_params + list(param.view(-1).detach().cpu().numpy())
 alpha_params = np.array(alpha_params)
 
 # Save vector
 np.save(f'alpha_vec_{task_name}.npy', alpha_params)
-
-    
