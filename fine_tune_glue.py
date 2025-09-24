@@ -10,6 +10,7 @@ from torch.optim import AdamW, Adam, SGD
 import argparse
 from utils import fix_seed, evaluate_bert_accuracy
 from huggingface_hub import login
+import time
 
 # Here we train alpha on a validation set after T steps
 
@@ -77,7 +78,7 @@ def train(model, loader, args):
         num_training_steps=num_training_steps
     )
     alpha_iter = iter(loader['val'])
-
+    start_time = time.time()
     for epoch in range(args.n_epochs):
         model.train()
         total_train_loss = 0
@@ -149,6 +150,9 @@ def train(model, loader, args):
             "Train Loss (epoch)": avg_train_loss
         })
         print(f'Finished Epoch {epoch+1} / {args.n_epochs}: Train Loss = {avg_train_loss:.4f}, Train Accuracy = {train_accuracy:.4f}')
+        runtime = time.time() - start_time
+        wandb.log({"Training Runtime (s)": runtime})
+        print(f"Training finished in {runtime/60:.2f} minutes")
 
 if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
