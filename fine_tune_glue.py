@@ -55,7 +55,7 @@ def parse_args():
         args.val_split = 0
     return args
 
-def train(model, loader, args):
+def train(model, loader, args, path):
     adapter_params, alpha_params = optimize_adapter(model)
     #param_groups = [{'params': adapter_params, 'lr': args.lr_adapter},
     #{'params': alpha_params, 'lr': args.lr_alpha}]
@@ -94,7 +94,6 @@ def train(model, loader, args):
                 if test_acc > best_acc:
                     best_acc = test_acc
                     print("Saving new best model weights...")
-                    path = f'./models/{args.model_name}_{args.task_name}_alpha_trainable_{args.train_alpha}.pth'
                     torch.save(model.state_dict(), path)
                     print('Model saved at: ', path)
                 model.train()
@@ -219,7 +218,7 @@ if __name__ == "__main__":
     print("Number of classes: ", num_labels)
     model = model.to(device)
     model.config.pad_token_id = tokenizer.eos_token_id
-    
+
     # Apply LoRA
     apply_adapter(model, args.model_name, args.lora, args.lora_r, args.alpha, args.lora_alpha, device, train_alpha = args.train_alpha)
 
@@ -244,7 +243,8 @@ if __name__ == "__main__":
         },
         name = f'alpha_trainable_{args.train_alpha}_lora_{args.lora}_init_{round(args.alpha, 3)}_seed_{args.seed}'
     )
-    
+    # Saving path of the model weights
+    path = f'./models/{name_model_run}_{args.task_name}_alpha_trainable_{args.train_alpha}.pth'
     # Start training
     train(model, loader, args)
     print("End of Training.")
