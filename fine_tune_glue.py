@@ -20,8 +20,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Fine-tune a DistilBERT model with Adapters on GLUE task")
 
     # Training arguments
-    parser.add_argument("--model_name", type=str, default="roberta-base", help="The model to fine-tune")
-    # we can slso use: Qwen/Qwen2.5-0.5B or google/gemma-3-270m or meta-llama/Llama-3.2-1B
+    parser.add_argument("--model_name", type=str, default="HuggingFaceTB/SmolLM-360M", help="The model to fine-tune")
+    # we can slso use: roberta-base or Qwen/Qwen2.5-0.5B or google/gemma-3-270m or HuggingFaceTB/SmolLM-360M
     parser.add_argument("--task_name", type=str, default=None, help="The desired dataset")
     parser.add_argument("--N", type=int, default=None, help="The number of training samples")
     parser.add_argument("--n_epochs", type=int, default=10, help="Number of training epochs")
@@ -223,11 +223,7 @@ if __name__ == "__main__":
     print(f"The total number of parameters of the model is : {total_params}")
     print(f"The number of trainable parameters after applying Adapters : {trainable_params}")
 
-    name_model_run = args.model_name
-    if 'Qwen' in name_model_run:
-        name_model_run = 'qwen'
-    elif 'gemma' in name_model_run:
-        name_model_run = 'gemma'
+    name_model_run = args.model_name.split('/')[-1]
 
     # start a new wandb run to track this script
     wandb.init(

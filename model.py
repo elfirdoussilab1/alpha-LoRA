@@ -118,7 +118,8 @@ def replace_linear_with_adapter(model, lora, rank, alpha, alpha_r, device, train
 
     _replace(model)
 
-model_to_modules = {'roberta-base': ['classifier', 'query', 'value'], 'Qwen/Qwen2.5-0.5B': ['score', 'v_proj', 'o_proj', 'up_proj']}
+model_to_modules = {'roberta-base': ['classifier', 'query', 'value'], 'Qwen/Qwen2.5-0.5B': ['score', 'v_proj', 'o_proj', 'up_proj'],
+                    'HuggingFaceTB/SmolLM-360M': ['score', 'v_proj', 'o_proj', 'down_proj', 'up_proj']}
 
 def make_adapter_specific(model_name, model, lora, rank, alpha, alpha_r, device, train_alpha=False):
     # Freeze all original model weights except the last classififer layer
