@@ -166,6 +166,7 @@ if __name__ == "__main__":
     if 'Smol' in args.model_name:
         #tokenizer.add_special_tokens({'pad_token': '[PAD]'})
         tokenizer.pad_token = tokenizer.eos_token
+
     train_data, val_data, test_data = get_glue_datasets(args.task_name, args.val_split)
     # Define the sentence keys for each GLUE task. Most have two sentences.
     task_to_keys = {
@@ -217,7 +218,8 @@ if __name__ == "__main__":
     )
     print("Number of classes: ", num_labels)
     model = model.to(device)
-
+    model.config.pad_token_id = tokenizer.eos_token_id
+    
     # Apply LoRA
     apply_adapter(model, args.model_name, args.lora, args.lora_r, args.alpha, args.lora_alpha, device, train_alpha = args.train_alpha)
 
