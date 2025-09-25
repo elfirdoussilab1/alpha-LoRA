@@ -183,6 +183,8 @@ def change_alpha(adapter_model, new_alpha):
 def get_alpha(model, model_name):
     if "roberta" in model_name:
         return model.roberta.encoder.layer[0].attention.self.query.alpha[0].detach().cpu().numpy()
+    elif "Smol" in model_name:
+        return model.model.layers[0].self_attn.v_proj.alpha[0].detach().cpu().numpy()
     else:
         return model.classifier.alpha[0].detach().cpu().numpy()
     
