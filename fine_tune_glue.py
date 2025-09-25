@@ -163,8 +163,8 @@ if __name__ == "__main__":
     # Tokenizer and datasets
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     # Adding a PAD token to the tokenizer if the model is SmolLM
-    if 'Smol' in args.model_name:
-        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+   # if 'Smol' in args.model_name:
+    #    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
     train_data, val_data, test_data = get_glue_datasets(args.task_name, args.val_split)
     # Define the sentence keys for each GLUE task. Most have two sentences.
     task_to_keys = {
