@@ -246,7 +246,7 @@ if __name__ == "__main__":
     # Saving path of the model weights
     path = f'./models/{name_model_run}_{args.task_name}_alpha_trainable_{args.train_alpha}.pth'
     # Start training
-    train(model, loader, args)
+    train(model, loader, args, path)
     print("End of Training.")
 
     # Finish the W&B run
