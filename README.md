@@ -1,2 +1,2 @@
-# A Random Matrix Analysis of Transfer Learning
-This is the official code repository of the paper: A Random Matrix Analysis of Transfer Learning.
+# Effective Fine-Tuning via Base Model Rescaling
+This is the official code repository of $\alpha$-LoRA.
