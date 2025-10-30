@@ -14,7 +14,7 @@ import time
 
 # Here we train alpha on a validation set after T steps
 
-wandb.login(key='7c2c719a4d241a91163207b8ae5eb635bc0302a4')
+wandb.login(key='key')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Fine-tune a DistilBERT model with Adapters on GLUE task")
