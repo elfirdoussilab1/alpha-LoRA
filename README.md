@@ -1,5 +1,5 @@
 # $\alpha$-LoRA: Effective Fine-tuning via Base Model Rescaling
-This is the official code repository of the paper: $\alpha$-LoRA: Effective Fine-tuning via Base Model Rescaling, currently under review at ICLR 2026.
+This is the official code repository of the paper: $\alpha$-LoRA: Effective Fine-tuning via Base Model Rescaling, currently under review.
 
 ## Abstract
 Fine-tuning has proven to be highly effective in adapting pre-trained models to perform better on new desired tasks with minimal data samples. Among the most widely used approaches are reparameterization methods, which update a target module by augmenting its frozen weight matrix with an additional trainable weight matrix. The most prominent example is Low Rank Adaption (LoRA), which gained significant attention in recent years. In this paper, we introduce a new class of reparametrization methods for transfer learning, designed to enhance the generalization ability of fine-tuned models. We establish the effectiveness of our approach in a high-dimensional binary classification setting using tools from Random Matrix Theory, and further validate our theoretical findings through more realistic experiments, such as fine-tuning large language models.
