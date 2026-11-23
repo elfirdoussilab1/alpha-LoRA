@@ -52,9 +52,13 @@ def test_expectation_2(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft):
     T_2 = r_2 * (1 - gamma_ft * (1 + delta_Q) / (h * lambda_Q))
 
     # T_3
-    r_3 = (gamma_ft * (1 + delta_Q))**2 / h
-    T_3 = r_3 * ( (mu**2 / lambda_R**2) * ((beta*mu)**2 / lambda_Q**2 + ((1 - h) / eta) * (1 + (beta*mu)**2 * mu_beta_2 / lambda_Q**2 - 2*(beta*mu)**2 / lambda_Q)))
-    T_3 += r_3 * ((1 - h) * (1 - h_tilde) / eta) * (1 - 2 * mu**2 / lambda_R)
+    # r_3 = (gamma_ft * (1 + delta_Q))**2 / h
+    # B_1 = (mu / lambda_R)**2 * ((beta*mu / lambda_Q)**2 + ((1 - h)/eta) * (1 + beta**2 * mu_beta_2 * mu**2 / lambda_Q**2 - 2 * beta**2 * mu**2 / lambda_Q) )
+    # B_2 = (1 - h) * (1 - h_tilde) / (eta * h_tilde) * (mu**2 / lambda_R**2 + (1 - mu**2 / lambda_R)**2)
+    # T_3 = r_3 * (B_1 + B_2)
+    r_3 = (gamma_ft * (1 + delta_Q))**2 / (h * lambda_R**2)
+    T_3 = (beta* mu**2 / lambda_Q)**2 + ((mu**2 + eta_tilde)/h_tilde + (beta * mu**2)**2 * (mu_beta_2/lambda_Q - 2) / lambda_Q) / (1 + gamma_ft*(1 + delta_Q))**2
+    T_3 = r_3 * T_3
     return T_1 + alpha * T_2 + (alpha**2) * T_3
 
 def test_accuracy(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft):
@@ -63,7 +67,7 @@ def test_accuracy(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft):
     mean = test_expectation(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft)
     expec_2 = test_expectation_2(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft)
     std = np.sqrt(expec_2 - mean**2)
-    return 1 - integrate.quad(lambda x: gaussian(x, 0, 1), abs(mean)/std, np.inf)[0]
+    return 1 - integrate.quad(lambda x: gaussian(x, 0, 1), mean/std, np.inf)[0]
 
 def test_risk(N, n, p, mu, mu_orth, alpha, beta, gamma_pre, gamma_ft):
     # E[g] and E(g^2)
@@ -92,10 +96,11 @@ def optimal_alphas(N, n, p, mu, mu_orth, beta, gamma_pre, gamma_ft):
     r_2 = 2 * gamma_ft * beta * (1 + delta_Q) * mu**2 / (lambda_R * lambda_Q)
     T_2 = r_2 * (1 - gamma_ft * (1 + delta_Q) / (h * lambda_Q))
 
-    # T_3
-    r_3 = (gamma_ft * (1 + delta_Q))**2 / h
-    T_3 = r_3 * ( (mu**2 / lambda_R**2) * ((beta*mu)**2 / lambda_Q**2 + ((1 - h) / eta) * (1 + (beta*mu)**2 * mu_beta_2 / lambda_Q**2 - 2*(beta*mu)**2 / lambda_Q)))
-    T_3 += r_3 * ((1 - h) * (1 - h_tilde) / eta) * (1 - 2 * mu**2 / lambda_R)
+    # T_3 (corrected expression, same as in test_expectation_2)
+    eta_tilde = p / N
+    r_3 = (gamma_ft * (1 + delta_Q))**2 / (h * lambda_R**2)
+    T_3 = (beta* mu**2 / lambda_Q)**2 + ((mu**2 + eta_tilde)/h_tilde + (beta * mu**2)**2 * (mu_beta_2/lambda_Q - 2) / lambda_Q) / (1 + gamma_ft*(1 + delta_Q))**2
+    T_3 = r_3 * T_3
 
     # Max alpha
     alpha_max = (-2*T_1*beta*delta_Q*gamma_ft*mu**2 - 2*T_1*beta*gamma_ft*mu**2 + T_2*lambda_R*mu_beta_2)
@@ -161,7 +166,7 @@ def test_accuracy_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma):
     mean = test_expectation_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma)
     expec_2 = test_expectation_2_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma)
     std = np.sqrt(expec_2 - mean**2)
-    return 1 - integrate.quad(lambda x: gaussian(x, 0, 1), abs(mean)/std, np.inf)[0]
+    return 1 - integrate.quad(lambda x: gaussian(x, 0, 1), mean/std, np.inf)[0]
 
 def test_risk_arbitrary(n, p, w_tilde, vmu_beta, alpha, gamma):
     # E[g] and E(g^2)

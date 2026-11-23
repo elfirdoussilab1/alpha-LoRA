@@ -9,7 +9,7 @@ from dataset import *
 # Parameters for Amazon review dataset
 N = 2000
 p = 400
-n = 20
+n = 40
 gamma_pre = 1
 gamma_ft = 1
 batch = 10

@@ -81,7 +81,8 @@ decision = lambda w, X: 2 * (g(w, X) >= 0) - 1
 # Binary accuracy function
 def accuracy(y, y_pred):
     acc = np.mean(y == y_pred)
-    return max(acc, 1 - acc)
+    # return max(acc, 1 - acc)
+    return acc
 
 # Losses
 def L2_loss(w, X, y):
