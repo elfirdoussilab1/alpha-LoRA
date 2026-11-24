@@ -13,6 +13,7 @@ PY="${PY:-python}"
 SEEDS="${SEEDS:-1 2 3}"
 MODELS="${MODELS:-Qwen/Qwen2.5-7B}"
 export TOKENIZERS_PARALLELISM=false
+export HF_HOME="${HF_HOME:-/scratches/hypatia/ae606/data/huggingface}"   # models + datasets on scratch (home quota is small)
 
 # one 7B run at a time on the single GPU (runs are ordered seed by seed: a 1-seed table is available early)
 COST="${COST:-1.0}"
