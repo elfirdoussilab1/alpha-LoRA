@@ -18,10 +18,10 @@ for M in $MODELS; do
     add_job "${m}_grad-v2-nodelay_s${s}"   $b $GRADV2 --alpha_start 0          --label v2_without_delayed_start
     add_job "${m}_grad-v2-sharpe_s${s}"    $b $GRADV2 --alpha_objective sharpe --label v2_with_sharpe_objective
     b="--model $M --seed $s --lr $LR_LORA --group theory"
-    add_job "${m}_theory_s${s}"            $b $THEORY                          --label alpha-LoRA-theory_layer_2x
+    add_job "${m}_theory_s${s}"            $b $THEORY --theory_groups layer    --label alpha-LoRA-theory_layer_2x
     add_job "${m}_theory-global_s${s}"     $b $THEORY --theory_groups global   --label groups_global
     add_job "${m}_theory-module_s${s}"     $b $THEORY --theory_groups module   --label groups_module
-    add_job "${m}_theory-1x_s${s}"         $b $THEORY --theory_at 0.5          --label one_update_at_0.5
+    add_job "${m}_theory-1x_s${s}"         $b $THEORY --theory_groups layer --theory_at 0.5 --label one_update_at_0.5
   done
 done
 launch

@@ -88,7 +88,7 @@ def parse_args():
     ap.add_argument("--alpha_objective", default="ce", choices=["ce", "sharpe"])
     # alpha-LoRA-theory
     ap.add_argument("--theory_at", default="0.3,0.6", help="fractions of training at which alpha is re-estimated")
-    ap.add_argument("--theory_groups", default="layer", choices=["global", "type", "layer", "module"])
+    ap.add_argument("--theory_groups", default="global", choices=["global", "type", "layer", "module"])
     ap.add_argument("--theory_shrink", type=float, default=0.1)
     ap.add_argument("--theory_trust", type=float, default=0.25)
     # optimisation
@@ -286,7 +286,13 @@ def theory_update(model, alpha_mods, probe_loader, lid, device, args):
         p.requires_grad_(False)
     for p in params:
         p.requires_grad_(True)
-    model.eval(); AS.probe = True
+    # stay in train mode: HF only applies gradient checkpointing when model.training is True, and without it the
+    # backward pass over the probe batch keeps every layer's activations (OOM on 96 GB). Only dropout is switched off.
+    drop = [m for m in model.modules() if isinstance(m, nn.Dropout)]
+    model.train()
+    for m in drop:
+        m.eval()
+    AS.probe = True
     Z = []
     for b in probe_loader:
         AS.acc = {}

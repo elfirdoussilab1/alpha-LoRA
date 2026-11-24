@@ -28,7 +28,10 @@ LR_IA3="${LR_IA3:-3e-3}"
 # the algorithms (shared by all launchers)
 GRAD="--method lora --alpha grad --T 10 --lr_alpha 5e-3"                                    # alpha-LoRA-grad (paper)
 GRADV2="--method lora --alpha grad --T 10 --lr_alpha 5e-3 --alpha_data heldout --alpha_start 0.2 --alpha_param log --alpha_accum 2"  # proposed
-THEORY="--method lora --alpha theory --theory_at 0.3,0.6 --theory_groups layer"           # alpha-LoRA-theory
+# alpha-LoRA-theory: ONE global alpha (the scalar alpha of the theory). Per-layer / per-module alpha hit the trust region
+# on almost every group and broke the model after the update (ablation: dev 90.5 -> 66, final test 85.7 / 78.2), while
+# the global alpha moves by < 0.07, keeps improving dev and has the best dev accuracy of all theory variants.
+THEORY="--method lora --alpha theory --theory_at 0.3,0.6 --theory_groups global"
 
 init_exp() {
   EXP="$1"; RES="$B/results/$EXP"; LOGS="$B/logs/$EXP"; JOBS="$LOGS/jobs.tsv"

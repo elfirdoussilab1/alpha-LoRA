@@ -7,7 +7,7 @@
 # Full tables: commonsense_reasoning/results/<exp>/summary.md ; figures: commonsense_reasoning/results/<exp>/plots/*.png
 cd "$(dirname "$0")/.."
 B=commonsense_reasoning
-EXP="${1:?usage: monitor.sh <main|ablation|scarcity|all> [seconds]}"; INT="${2:-60}"; PY="${PY:-python}"
+EXP="${1:?usage: monitor.sh <main|ablation|scarcity|small|all> [seconds]}"; INT="${2:-60}"; PY="${PY:-python}"
 status_line() {
   local f="$B/logs/$1/_queue_status.json"
   [[ -f $f ]] && "$PY" -c "import json;s=json.load(open('$f'));print(f\"$1: {s['done']}/{s['total']} done | running {len(s['running'])} | pending {s['pending']} | failed {len(s['failed'])} | {s['time']}\")" \
@@ -17,7 +17,7 @@ while true; do
   clear 2>/dev/null || true
   echo "================ $EXP | $(date '+%F %T') ================"
   if [[ "$EXP" == all ]]; then
-    for e in main ablation scarcity; do
+    for e in main ablation scarcity small; do
       status_line $e
       [[ -d "$B/results/$e" ]] && "$PY" $B/summarize.py "$B/results/$e" --brief 2>/dev/null
     done
