@@ -17,7 +17,8 @@ gamma_ft = 1e-1
 dataset_name = 'amazon'
 data_source_target = [('dvd', 'book'), ('book', 'kitchen'), ('kitchen', 'elec')]
 
-alphas = np.linspace(-4, 4, 81)
+pad = 0.15         # margin on each side of [min(alpha_bar, 0), max(alpha^*, 1)], as a fraction of that span (as in accuracy_alpha.py)
+n_alphas = 81      # number of alpha values (each one costs len(seeds) * batch fits)
 batch = 10
 
 fig, ax = plt.subplots(1, 3, figsize = (30, 6))
@@ -34,22 +35,29 @@ for i, (source, target) in enumerate(data_source_target):
     data_pre, data_ft, beta, vmu_orth = dataset.create_pre_ft_datasets(N, source, n, target, dataset_name)
     mu_orth = np.linalg.norm(vmu_orth)
     mu = data_pre.mu
-    mu_orth = np.linalg.norm(vmu_orth)
+
+    # adaptive x-range from the theoretical alpha^* and alpha_bar (same rule as accuracy_alpha.py), computed once
+    a_th, abar_th = optimal_alphas(N, n, p, mu, mu_orth, beta, gamma_pre, gamma_ft)
+    lo = min(abar_th, a_th, 0, 1)
+    hi = max(abar_th, a_th, 0, 1)
+    span = hi - lo
+    alphas = np.linspace(lo - pad * span, max(hi + pad * span, min(2.5 * a_th, a_th + 8)), n_alphas)
+    alphas = np.union1d(alphas, [0, 1])      # make sure alpha = 0 and alpha = 1 are on the grid
+
     accs = []
     for seed in seeds:
         fix_seed(seed)
         accs_i = []
         for alpha in tqdm(alphas):
             accs_i.append(empirical_accuracy('ft', batch, N, n, p, mu, mu_orth, beta, alpha, gamma_pre, gamma_ft, data_type= data_type))
-        accs.append(accs_i)   
+        accs.append(accs_i)
     accs = np.mean(accs, axis = 0)
 
     # xmax, ymax
-    #alpha_max, alpha_min = optimal_alphas(N, n, p, mu, mu_orth, beta, gamma_pre, gamma_ft)
     alpha_max = alphas[np.argmax(accs)]
     acc_max = np.max(accs)
-    acc_zero = accs[np.where(alphas == 0)[0][0]]
-    acc_one = accs[np.where(alphas == 1)[0][0]]
+    acc_zero = accs[np.argmin(np.abs(alphas - 0))]
+    acc_one = accs[np.argmin(np.abs(alphas - 1))]
 
     ax[i].plot(alphas, accs, linewidth = linewidth, color = 'tab:blue')
     ax[i].plot([alphas[0], alphas[-1]], [acc_zero, acc_zero], linewidth = linewidth, color = 'tab:orange', linestyle = '-.')
