@@ -1,4 +1,5 @@
 wandb/
+paper/
 # Ignore every file
 *
 !*/
@@ -7,7 +8,6 @@ wandb/
 !*.sh
 !*.py
 !*.cpp
-!*.tex
 !*.pdf
 !.placeholder
 !*.png

@@ -7,7 +7,9 @@ checkpoint rule -- for every task and every seed. The ONLY difference is the alp
 steps on a fresh batch; its hyper-parameters (T, lr_alpha) are also fixed for all tasks and seeds.
 alpha-LoRA-theory (--method alpha-lora-theory) instead sets alpha in closed form at a few points of training, from the
 mean / covariance of the margin and its per-layer alpha-derivatives on a PROBE set held out from the adapter (as in
-commonsense_reasoning/train.py). Only this method loses the probe examples from its training set.
+commonsense_reasoning/train.py). Only this method loses the probe examples from its training set, unless
+--probe_source dev (the probe is the checkpoint-selection split) or --probe_reinsert (it rejoins training after the last
+update).
 Other baselines / variants (same protocol): --method dora | ia3, --loraplus_ratio 16 (LoRA+, also combinable with alpha),
 and alpha-LoRA-grad-v2 (--alpha grad --alpha_data heldout --alpha_start 0.2 --alpha_param log --alpha_accum 2).
 
@@ -79,6 +81,10 @@ def parse_args():
     ap.add_argument("--theory_trust", type=float, default=0.25)
     ap.add_argument("--probe_frac", type=float, default=0.1)
     ap.add_argument("--probe_max", type=int, default=1000)
+    ap.add_argument("--probe_source", default="train", choices=["train", "dev"],
+                    help="train: probe held out of the training split; dev: reuse the checkpoint-selection split")
+    ap.add_argument("--probe_reinsert", action="store_true",
+                    help="probe examples rejoin the training set after the last alpha-theory update")
     # protocol / io
     ap.add_argument("--dev_frac", type=float, default=0.1)
     ap.add_argument("--dev_max", type=int, default=2000)
@@ -115,11 +121,14 @@ def build_data(args, tok):
     raw = load_dataset("nyu-mll/glue", args.task)
     n_dev = int(min(args.dev_max, max(200, args.dev_frac * len(raw["train"]))))
     sp = raw["train"].train_test_split(test_size=n_dev, seed=args.data_seed)
-    train, probe = sp["train"], None
-    if uses_probe(args):
+    train, probe, full = sp["train"], None, None
+    if uses_probe(args) and args.probe_source == "dev":     # no training example is lost
+        probe = sp["test"]
+    elif uses_probe(args):
         n_probe = int(min(args.probe_max, max(100, args.probe_frac * len(train))))
         pp = train.train_test_split(test_size=n_probe, seed=args.data_seed)
         train, probe = pp["train"], pp["test"]
+        full = sp["train"] if args.probe_reinsert else None
 
     def prep(ds):
         ds = ds.map(lambda ex: tok(ex[keys[0]], ex[keys[1]] if keys[1] else None, truncation=True, max_length=max_len),
@@ -128,7 +137,8 @@ def build_data(args, tok):
         ds = ds.remove_columns([c for c in ds.column_names if c not in keep]).rename_column("label", "labels")
         ds.set_format("torch")
         return ds
-    return prep(train), prep(sp["test"]), prep(raw[test_split]), (prep(probe) if probe is not None else None), num_labels
+    opt = lambda ds: prep(ds) if ds is not None else None
+    return prep(train), prep(sp["test"]), prep(raw[test_split]), opt(probe), opt(full), num_labels
 
 
 class Probe:   # alpha-LoRA-theory: per-example d margin / d alpha_module, filled by the alpha hooks
@@ -245,7 +255,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     tok = AutoTokenizer.from_pretrained(args.model)
-    train, dev, test, probe, num_labels = build_data(args, tok)
+    train, dev, test, probe, full, num_labels = build_data(args, tok)
     coll = DataCollatorWithPadding(tok)
     loader = lambda ds, shuf, seed=0, bs=args.batch_size: DataLoader(
         ds, batch_size=bs, shuffle=shuf, collate_fn=coll, drop_last=shuf, generator=torch.Generator().manual_seed(seed))
@@ -304,6 +314,7 @@ def main():
     best, history, theory_log, step, t0 = {"dev": -1.0}, [], [], 0, time.time()
     model.train()
     while step < total:
+        restart = False
         for b in train_loader:
             loss = loss_on(b)
             loss.backward()
@@ -323,6 +334,9 @@ def main():
                 info = {"step": step, **theory_update(model, named_alpha, probe_loader, device, args)}
                 theory_log.append(info)
                 print(f"[{args.run_id}] alpha-theory @ step {step}: {info}", flush=True)
+                if full is not None and step == max(theory_steps):     # --probe_reinsert
+                    train_loader, restart = loader(full, True, args.seed + 1), True
+                    print(f"[{args.run_id}] probe rejoins training: train={len(full)}", flush=True)
             if step % eval_every == 0 or step == total:
                 d, t = evaluate(model, dev_loader, device), evaluate(model, test_loader, device)
                 rec = {"step": step, "loss": float(loss.item()), "dev": d, "test": t}
@@ -339,7 +353,7 @@ def main():
                 print(f"[{args.run_id}] step {step}/{total} loss={loss.item():.4f} dev={d:.4f} test={t:.4f} "
                       f"best_dev={best['dev']:.4f} (test {best['test']:.4f})"
                       + (f" alpha={rec['alpha_mean']:.3f}±{rec['alpha_std']:.3f}" if alpha else ""), flush=True)
-            if step >= total:
+            if step >= total or restart:
                 break
 
     res = {"args": vars(args), "run_id": args.run_id, "test_at_best_dev": best["test"], "best_dev": best["dev"],
