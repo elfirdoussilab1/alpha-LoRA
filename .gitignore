@@ -14,3 +14,4 @@ paper/
 !*.csv
 !*.ipynb
 !*.npy
+!*.md
